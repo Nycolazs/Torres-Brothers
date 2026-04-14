@@ -5,7 +5,7 @@ import { Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -220,7 +220,7 @@ export default function DREPage() {
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!report || exportRows.length === 0) {
       toast.error('Sem dados para exportar.');
       return;
@@ -230,25 +230,41 @@ export default function DREPage() {
       const periodLabel = format(period.startDate, "MMMM 'de' yyyy", { locale: ptBR });
       const filename = `dre-${selectedMonth}.xlsx`;
 
-      const wsData = [
-        ['DRE — Demonstrativo de Resultado do Exercício'],
-        [`Período: ${periodLabel}`],
-        [`Emitido em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`],
-        [],
-        ['Item', 'Valor (R$)', '% Receita'],
-        ...exportRows.map((row) => [
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('DRE');
+
+      worksheet.addRow(['DRE — Demonstrativo de Resultado do Exercício']);
+      worksheet.addRow([`Período: ${periodLabel}`]);
+      worksheet.addRow([`Emitido em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`]);
+      worksheet.addRow([]);
+      worksheet.addRow(['Item', 'Valor (R$)', '% Receita']);
+
+      exportRows.forEach((row) => {
+        worksheet.addRow([
           row.item,
           row.valor,
           row.percentual !== undefined ? Number(row.percentual.toFixed(2)) : null,
-        ]),
-      ];
+        ]);
+      });
 
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
-      ws['!cols'] = [{ wch: 52 }, { wch: 18 }, { wch: 12 }];
+      worksheet.getRow(1).font = { bold: true, size: 14 };
+      worksheet.getRow(5).font = { bold: true };
+      worksheet.getColumn(1).width = 52;
+      worksheet.getColumn(2).width = 18;
+      worksheet.getColumn(3).width = 12;
+      worksheet.getColumn(2).numFmt = '#,##0.00';
+      worksheet.getColumn(3).numFmt = '0.00';
 
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'DRE');
-      XLSX.writeFile(wb, filename);
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
       toast.success('Excel exportado com sucesso.');
     } catch {
       toast.error('Erro ao exportar Excel do DRE.');

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Download, FileSpreadsheet, FileText } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -24,31 +23,38 @@ interface ExportButtonProps {
 export function ExportButton({ data, columns, filename, title }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false);
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     setExporting(true);
     try {
-      const wsData = data.map((row) => {
-        const obj: Record<string, unknown> = {};
-        columns.forEach((col) => {
-          obj[col.header] = row[col.key];
-        });
-        return obj;
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet(title);
+
+      worksheet.addRow(columns.map((col) => col.header));
+      data.forEach((row) => {
+        worksheet.addRow(columns.map((col) => row[col.key] ?? ''));
       });
 
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(wsData);
+      worksheet.getRow(1).font = { bold: true };
 
-      // Auto-fit column widths
-      const colWidths = columns.map((col) => ({
-        wch: Math.max(
-          col.header.length,
-          ...data.map((row) => String(row[col.key] || '').length)
-        ),
-      }));
-      ws['!cols'] = colWidths;
+      columns.forEach((col, index) => {
+        const maxDataLength = data.reduce((max, row) => {
+          const length = String(row[col.key] ?? '').length;
+          return Math.max(max, length);
+        }, col.header.length);
 
-      XLSX.utils.book_append_sheet(wb, ws, title);
-      XLSX.writeFile(wb, `${filename}.xlsx`);
+        worksheet.getColumn(index + 1).width = Math.min(Math.max(maxDataLength + 2, 12), 60);
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${filename}.xlsx`;
+      link.click();
+      URL.revokeObjectURL(url);
       toast.success('Arquivo Excel exportado com sucesso!');
     } catch {
       toast.error('Erro ao exportar Excel.');
