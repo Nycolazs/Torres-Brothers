@@ -50,7 +50,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
     try {
       await signOut();
       toast.success('Até logo!');
-      router.push('/');
+      router.push('/login');
     } catch {
       toast.error('Erro ao sair. Tente novamente.');
     }

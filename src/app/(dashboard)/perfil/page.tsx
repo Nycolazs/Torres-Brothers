@@ -184,7 +184,7 @@ export default function PerfilPage() {
       if (auth.currentUser) {
         await deleteUser(auth.currentUser);
         toast.success('Conta excluída.');
-        router.push('/');
+        router.push('/login');
       }
     } catch {
       toast.error('Erro ao excluir conta. Faça login novamente e tente de novo.');
