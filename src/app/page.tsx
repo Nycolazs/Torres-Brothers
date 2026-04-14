@@ -130,7 +130,7 @@ export default function HomePage() {
                 </div>
                 <div>
                   <p
-                    className="text-[1.7rem] leading-[1.1] text-[#f3e6cb]"
+                    className="text-[1.7rem] font-bold uppercase leading-[1.1] tracking-wide text-[#f3e6cb]"
                     style={{ fontFamily: 'var(--font-amiri)' }}
                   >
                     Torres Brothers
@@ -396,7 +396,7 @@ export default function HomePage() {
                 <Image src="/logo.png" alt="Torres Brothers" width={48} height={48} className="h-12 w-12 object-contain" />
               </div>
               <p
-                className="text-[2.1rem] leading-none text-[#f3e6cb]"
+                className="text-[2.1rem] font-bold uppercase leading-none tracking-wide text-[#f3e6cb]"
                 style={{ fontFamily: 'var(--font-amiri)' }}
               >
                 Torres Brothers

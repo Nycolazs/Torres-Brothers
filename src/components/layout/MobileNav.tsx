@@ -22,7 +22,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
             className="flex items-center gap-2 cursor-pointer"
           >
             <Image src="/logo.png" alt="Torres Brothers" width={30} height={30} className="h-7.5 w-auto" />
-            <SheetTitle className="text-[15px] font-semibold tracking-wide text-[#1B4332]">
+            <SheetTitle className="font-[family-name:var(--font-amiri)] text-[15px] font-bold uppercase tracking-wide text-[#1B4332]">
               Torres Brothers
             </SheetTitle>
           </Link>
