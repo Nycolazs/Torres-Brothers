@@ -47,7 +47,7 @@ export default function HomePage() {
           const nextIndex = Math.round(element.scrollTop / Math.max(element.clientHeight, 1));
           if (nextIndex !== activeIndex) setActiveIndex(nextIndex);
         }}
-        className="h-screen snap-y snap-mandatory overflow-y-auto scroll-smooth"
+        className="presentation-scrollbar h-screen snap-y snap-mandatory overflow-y-auto scroll-smooth"
       >
         <section
           data-slide-index={0}
@@ -327,47 +327,38 @@ export default function HomePage() {
         </section>
       </div>
 
-      <div className="pointer-events-none fixed right-3 top-1/2 z-30 hidden -translate-y-1/2 flex-col gap-3 lg:flex">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => scrollToSlide(index)}
-            className={`pointer-events-auto h-2.5 w-2.5 rounded-full border transition ${
-              activeIndex === index
-                ? 'scale-125 border-[#d4af37] bg-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,.8)]'
-                : 'border-white/60 bg-white/20 hover:bg-white/40'
-            }`}
-            aria-label={`Ir para slide ${index + 1}`}
-          />
-        ))}
-      </div>
-
-      <div className="pointer-events-none fixed right-4 top-1/2 z-30 hidden -translate-y-1/2 lg:flex lg:flex-col lg:gap-2">
+      <div className="pointer-events-none fixed right-5 top-1/2 z-30 hidden -translate-y-1/2 md:flex md:flex-col md:gap-2">
         <button
           onClick={() => scrollToSlide(activeIndex - 1)}
-          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:border-[#d4af37]/70 hover:text-[#f4df9c]"
+          className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:border-[#d4af37]/70 hover:text-[#f4df9c]"
           aria-label="Slide anterior"
         >
-          <ArrowUp className="h-4 w-4" />
+          <ArrowUp className="h-3.5 w-3.5" />
         </button>
         <button
           onClick={() => scrollToSlide(activeIndex + 1)}
-          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:border-[#d4af37]/70 hover:text-[#f4df9c]"
+          className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:border-[#d4af37]/70 hover:text-[#f4df9c]"
           aria-label="Próximo slide"
         >
-          <ArrowDown className="h-4 w-4" />
+          <ArrowDown className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      <div className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/20 bg-black/35 px-3 py-2 backdrop-blur lg:hidden">
-        {slides.map((_, index) => (
-          <button
-            key={`mobile-${index}`}
-            onClick={() => scrollToSlide(index)}
-            className={`h-2.5 w-2.5 rounded-full transition ${activeIndex === index ? 'bg-[#d4af37]' : 'bg-white/45'}`}
-            aria-label={`Ir para slide ${index + 1}`}
-          />
-        ))}
+      <div className="pointer-events-none fixed bottom-4 right-4 z-30 flex items-center gap-2 md:hidden">
+        <button
+          onClick={() => scrollToSlide(activeIndex - 1)}
+          className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:border-[#d4af37]/70 hover:text-[#f4df9c]"
+          aria-label="Slide anterior"
+        >
+          <ArrowUp className="h-3.5 w-3.5" />
+        </button>
+        <button
+          onClick={() => scrollToSlide(activeIndex + 1)}
+          className="pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:border-[#d4af37]/70 hover:text-[#f4df9c]"
+          aria-label="Próximo slide"
+        >
+          <ArrowDown className="h-3.5 w-3.5" />
+        </button>
       </div>
     </main>
   );
