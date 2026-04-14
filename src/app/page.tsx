@@ -1,33 +1,85 @@
-import Link from 'next/link';
-import { MessageCircle, CheckCircle2, Sparkles, ShieldCheck, Clock3, MapPin, Phone } from 'lucide-react';
+'use client';
 
-const whatsappNumber = '5541987164811';
-const whatsappHref = `https://wa.me/${whatsappNumber}`;
+import Link from 'next/link';
+import { useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import {
+  ArrowDown,
+  ArrowUp,
+  BadgeCheck,
+  BarChart3,
+  BriefcaseBusiness,
+  Building2,
+  Factory,
+  Gem,
+  Landmark,
+  Mail,
+  MessageCircle,
+  Scale,
+  ShieldCheck,
+  Target,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
+
+const whatsappHref = 'https://wa.me/5541987164811';
 
 export default function HomePage() {
+  const slides = useMemo(() => ['hero', 'about', 'solutions', 'consulting', 'segments', 'cta'], []);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const scrollToSlide = (index: number) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const clamped = Math.max(0, Math.min(slides.length - 1, index));
+    const target = container.querySelector<HTMLElement>(`[data-slide-index='${clamped}']`);
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setActiveIndex(clamped);
+  };
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#f7fbf8] via-[#ffffff] to-[#f7fbf8] text-[#111827] dark:from-[#f7fbf8] dark:via-[#ffffff] dark:to-[#f7fbf8] dark:text-[#111827]">
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-[#1B4332]/10 blur-3xl" />
-          <div className="absolute -bottom-28 -right-20 h-80 w-80 rounded-full bg-[#C4A35A]/15 blur-3xl" />
-        </div>
+    <main className="relative h-screen w-full overflow-hidden bg-[#081f18] text-white">
+      <div
+        ref={containerRef}
+        onScroll={(event) => {
+          const element = event.currentTarget;
+          const nextIndex = Math.round(element.scrollTop / Math.max(element.clientHeight, 1));
+          if (nextIndex !== activeIndex) setActiveIndex(nextIndex);
+        }}
+        className="h-screen snap-y snap-mandatory overflow-y-auto scroll-smooth"
+      >
+        <section
+          data-slide-index={0}
+          className="relative flex min-h-screen snap-start items-center justify-center overflow-hidden px-4 py-16 sm:px-8"
+          style={{
+            backgroundImage:
+              "linear-gradient(120deg, rgba(8,31,24,.88), rgba(15,61,46,.82), rgba(8,31,24,.88)), url('https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1920&q=80')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,.20),transparent_35%)]" />
 
-        <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-          <div className="grid items-center gap-10 lg:grid-cols-2">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+            className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]"
+          >
             <div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#1B4332]/15 bg-[#1B4332]/5 px-4 py-1.5 text-sm font-medium text-[#1B4332]">
-                <Sparkles className="h-4 w-4" />
-                Torres Brothers
-              </span>
+              <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-[#d4af37]/45 bg-[#0f3d2e]/45 px-4 py-2 backdrop-blur">
+                <img src="/logo.png" alt="Torres-Brothers" className="h-7 w-auto" />
+                <span className="text-xs font-semibold tracking-[0.2em] text-[#f4df9c]">TORRES-BROTHERS</span>
+              </div>
 
-              <h1 className="mt-5 text-3xl font-bold leading-tight text-[#1B4332] sm:text-4xl lg:text-5xl">
-                Lavagem profissional de mercantis com excelência, agilidade e confiança
+              <h1 className="text-4xl font-bold leading-[1.08] sm:text-5xl lg:text-6xl">
+                Transforme a gestão da sua empresa com contabilidade consultiva premium
               </h1>
 
-              <p className="mt-5 max-w-xl text-base text-[#4b5563] sm:text-lg dark:text-[#4b5563]">
-                Somos especializados em lavagem de mercantis, entregando um serviço completo para manter seu negócio
-                com aparência impecável, mais higiene e melhor experiência para seus clientes.
+              <p className="mt-6 max-w-2xl text-base text-white/82 sm:text-lg">
+                Uma experiência institucional moderna, estratégica e orientada a crescimento para empresas que
+                valorizam clareza financeira, governança e decisões com inteligência de dados.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -35,98 +87,288 @@ export default function HomePage() {
                   href={whatsappHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#1B4332] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#245a44]"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d4af37] px-6 py-3 text-sm font-semibold text-[#0f3d2e] shadow-[0_0_32px_rgba(212,175,55,.35)] transition hover:bg-[#e4c761]"
                 >
                   <MessageCircle className="h-4 w-4" />
-                  Falar no WhatsApp
+                  Agende uma consulta gratuita
                 </Link>
-                <Link
-                  href="#sobre"
-                  className="inline-flex items-center justify-center rounded-lg border border-[#1B4332]/20 bg-white px-6 py-3 text-sm font-semibold text-[#1B4332] transition hover:bg-[#1B4332]/5"
+                <button
+                  onClick={() => scrollToSlide(1)}
+                  className="inline-flex items-center justify-center rounded-xl border border-white/35 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/15"
                 >
-                  Conhecer a empresa
-                </Link>
-              </div>
-
-              <div className="mt-6 flex items-center gap-2 text-sm text-[#4b5563] dark:text-[#4b5563]">
-                <Phone className="h-4 w-4 text-[#1B4332]" />
-                Contato direto: <span className="font-semibold text-[#111827] dark:text-[#111827]">(41) 98716-4811</span>
+                  Conheça nossa metodologia
+                </button>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[#1B4332]/10 bg-white p-6 shadow-xl sm:p-8 dark:bg-white">
-              <img src="/logo.png" alt="Torres Brothers" className="mx-auto h-20 w-auto sm:h-24" />
-              <h2 className="mt-5 text-center font-[family-name:var(--font-amiri)] text-3xl font-bold uppercase tracking-wide text-[#1B4332]">
-                Torres Brothers
-              </h2>
-              <p className="mt-2 text-center text-sm uppercase tracking-[0.25em] text-[#C4A35A]">Lavagem de Mercantis</p>
-
-              <div className="mt-6 space-y-3">
+            <div className="rounded-3xl border border-[#d4af37]/35 bg-white/8 p-6 shadow-2xl backdrop-blur-md sm:p-8">
+              <h2 className="text-lg font-semibold text-[#f4df9c]">Consultoria que gera resultado</h2>
+              <div className="mt-5 grid gap-3">
                 {[
-                  'Atendimento cuidadoso e padronizado',
-                  'Equipe experiente e treinada',
-                  'Compromisso com qualidade e pontualidade',
+                  'Estratégia financeira orientada por indicadores',
+                  'Apoio decisório para crescimento sustentável',
+                  'Governança e organização empresarial de alto nível',
                 ].map((item) => (
-                  <div key={item} className="flex items-start gap-3 rounded-lg border border-[#d1d5db] bg-[#f9fafb] p-3 dark:border-[#d1d5db] dark:bg-[#f9fafb]">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#1B4332]" />
-                    <p className="text-sm text-[#1f2937]">{item}</p>
+                  <div key={item} className="flex items-start gap-3 rounded-xl border border-white/15 bg-black/20 p-3">
+                    <Gem className="mt-0.5 h-4 w-4 shrink-0 text-[#d4af37]" />
+                    <p className="text-sm text-white/90">{item}</p>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </motion.div>
+        </section>
 
-      <section id="sobre" className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
-        <div className="rounded-2xl border border-[#e5e7eb] bg-white p-6 sm:p-8 lg:p-10 dark:border-[#e5e7eb] dark:bg-white">
-          <h3 className="text-2xl font-bold text-[#1B4332] sm:text-3xl">Sobre a empresa</h3>
-          <p className="mt-4 text-[#4b5563] dark:text-[#4b5563]">
-            A Torres Brothers atua com foco em resultados, organização e apresentação visual do seu ambiente comercial.
-            Nossa missão é oferecer um serviço de lavagem de mercantis que valorize seu espaço e transmita confiança para
-            quem entra no seu estabelecimento.
-          </p>
+        <section
+          data-slide-index={1}
+          className="relative flex min-h-screen snap-start items-center justify-center overflow-hidden px-4 py-16 sm:px-8"
+          style={{
+            backgroundImage:
+              "linear-gradient(120deg, rgba(10,34,26,.95), rgba(10,34,26,.90)), url('https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1920&q=80')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.7 }}
+            className="mx-auto grid w-full max-w-6xl items-center gap-8 lg:grid-cols-[1.15fr_0.85fr]"
+          >
+            <div>
+              <h2 className="text-3xl font-bold text-[#f4df9c] sm:text-4xl">Sobre nós</h2>
+              <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                {[
+                  {
+                    title: 'Missão',
+                    desc: 'Transformar dados financeiros em estratégia empresarial de alto impacto.',
+                    icon: <Target className="h-5 w-5 text-[#d4af37]" />,
+                  },
+                  {
+                    title: 'Visão',
+                    desc: 'Ser referência nacional em contabilidade consultiva para empresas em expansão.',
+                    icon: <TrendingUp className="h-5 w-5 text-[#d4af37]" />,
+                  },
+                  {
+                    title: 'Valores',
+                    desc: 'Ética, precisão, proximidade e compromisso absoluto com o resultado do cliente.',
+                    icon: <ShieldCheck className="h-5 w-5 text-[#d4af37]" />,
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="rounded-2xl border border-white/15 bg-white/6 p-4 backdrop-blur-sm">
+                    {item.icon}
+                    <h3 className="mt-3 text-base font-semibold">{item.title}</h3>
+                    <p className="mt-2 text-sm text-white/78">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-xl border border-[#e5e7eb] p-4 dark:border-[#e5e7eb]">
-              <ShieldCheck className="h-5 w-5 text-[#1B4332]" />
-              <h4 className="mt-2 font-semibold">Padrão de qualidade</h4>
-              <p className="mt-1 text-sm text-[#6b7280] dark:text-[#6b7280]">Processos consistentes para garantir acabamento profissional.</p>
+              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[#d4af37]/55 bg-[#d4af37]/12 px-4 py-2 text-sm text-[#f6e3a8]">
+                <BadgeCheck className="h-4 w-4" />
+                Certificação de Excelência SEBRAE
+              </div>
             </div>
-            <div className="rounded-xl border border-[#e5e7eb] p-4 dark:border-[#e5e7eb]">
-              <Clock3 className="h-5 w-5 text-[#1B4332]" />
-              <h4 className="mt-2 font-semibold">Agilidade no atendimento</h4>
-              <p className="mt-1 text-sm text-[#6b7280] dark:text-[#6b7280]">Organização para executar o serviço com rapidez e segurança.</p>
-            </div>
-            <div className="rounded-xl border border-[#e5e7eb] p-4 sm:col-span-2 lg:col-span-1 dark:border-[#e5e7eb]">
-              <MapPin className="h-5 w-5 text-[#1B4332]" />
-              <h4 className="mt-2 font-semibold">Atendimento próximo</h4>
-              <p className="mt-1 text-sm text-[#6b7280] dark:text-[#6b7280]">Comunicação simples e suporte direto pelo WhatsApp.</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:px-8 lg:pb-20">
-        <div className="rounded-2xl border border-[#1B4332]/15 bg-gradient-to-r from-[#1B4332] to-[#245a44] p-6 text-white sm:p-8 lg:p-10">
-          <h3 className="text-2xl font-bold sm:text-3xl">Vamos conversar sobre o seu negócio?</h3>
-          <p className="mt-3 max-w-2xl text-white/85">
-            Entre em contato agora e receba atendimento rápido para entender a melhor solução de lavagem de mercantis para sua empresa.
-          </p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link
-              href={whatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-[#1B4332] transition hover:bg-white/90"
-            >
-              <MessageCircle className="h-4 w-4" />
-              Chamar no WhatsApp
-            </Link>
-            <p className="text-sm text-white/90">WhatsApp: (41) 98716-4811</p>
-          </div>
-        </div>
-      </section>
+            <div className="overflow-hidden rounded-3xl border border-[#d4af37]/35 shadow-xl">
+              <img
+                src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80"
+                alt="Equipe corporativa em reunião"
+                className="h-[360px] w-full object-cover sm:h-[420px]"
+              />
+            </div>
+          </motion.div>
+        </section>
+
+        <section
+          data-slide-index={2}
+          className="relative flex min-h-screen snap-start items-center justify-center overflow-hidden bg-gradient-to-br from-[#0d3024] via-[#0a261d] to-[#081e17] px-4 py-16 sm:px-8"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.7 }}
+            className="mx-auto w-full max-w-6xl"
+          >
+            <h2 className="text-center text-3xl font-bold text-[#f4df9c] sm:text-4xl">Nossas Soluções Contábeis</h2>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              {[
+                { title: 'Gestão de RH', icon: <Users className="h-5 w-5 text-[#d4af37]" /> },
+                { title: 'Gestão Patrimonial', icon: <Landmark className="h-5 w-5 text-[#d4af37]" /> },
+                { title: 'Gestão Societária', icon: <Building2 className="h-5 w-5 text-[#d4af37]" /> },
+                { title: 'Gestão Fiscal', icon: <Scale className="h-5 w-5 text-[#d4af37]" /> },
+                { title: 'Valuation', icon: <BarChart3 className="h-5 w-5 text-[#d4af37]" /> },
+              ].map((card) => (
+                <div
+                  key={card.title}
+                  className="group rounded-2xl border border-white/12 bg-white/6 p-5 backdrop-blur-sm transition hover:-translate-y-1 hover:border-[#d4af37]/60 hover:shadow-[0_0_26px_rgba(212,175,55,.18)]"
+                >
+                  <div className="mb-3 inline-flex rounded-lg border border-[#d4af37]/40 bg-[#d4af37]/10 p-2">{card.icon}</div>
+                  <h3 className="text-base font-semibold text-white">{card.title}</h3>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+        <section
+          data-slide-index={3}
+          className="relative flex min-h-screen snap-start items-center justify-center overflow-hidden px-4 py-16 sm:px-8"
+          style={{
+            backgroundImage:
+              "linear-gradient(120deg, rgba(8,27,20,.94), rgba(8,27,20,.90)), url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1920&q=80')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          <div className="absolute inset-0 backdrop-blur-[1.5px]" />
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.7 }}
+            className="relative mx-auto w-full max-w-6xl"
+          >
+            <h2 className="text-3xl font-bold text-[#f4df9c] sm:text-4xl">Contabilidade Consultiva</h2>
+            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                'Consultoria estratégica empresarial',
+                'Planejamento de negócios detalhado',
+                'Diagnóstico empresarial completo',
+                'Análise de desempenho avançada',
+                'Planejamento tributário e orçamentário',
+                'Modelagem e redesenho de processos',
+                'Gestão de margens e lucratividade',
+              ].map((service) => (
+                <div key={service} className="rounded-xl border border-[#d4af37]/35 bg-black/30 p-4">
+                  <div className="mb-2 h-px w-14 bg-[#d4af37]/70" />
+                  <p className="text-sm text-white/90">{service}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+        <section
+          data-slide-index={4}
+          className="relative flex min-h-screen snap-start items-center justify-center overflow-hidden bg-gradient-to-br from-[#0f3d2e] via-[#0d3327] to-[#0a261e] px-4 py-16 sm:px-8"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.7 }}
+            className="mx-auto w-full max-w-5xl"
+          >
+            <h2 className="text-center text-3xl font-bold text-[#f4df9c] sm:text-4xl">Atendemos empresas</h2>
+            <div className="mt-10 grid gap-4 sm:grid-cols-3">
+              {[
+                { title: 'Comércio', icon: <BriefcaseBusiness className="h-6 w-6 text-[#d4af37]" /> },
+                { title: 'Indústria', icon: <Factory className="h-6 w-6 text-[#d4af37]" /> },
+                { title: 'Serviços', icon: <Building2 className="h-6 w-6 text-[#d4af37]" /> },
+              ].map((segment) => (
+                <div
+                  key={segment.title}
+                  className="rounded-2xl border border-white/15 bg-white/8 p-6 text-center backdrop-blur-sm"
+                >
+                  <div className="mx-auto inline-flex rounded-xl border border-[#d4af37]/40 bg-[#d4af37]/10 p-3">{segment.icon}</div>
+                  <h3 className="mt-4 text-lg font-semibold">{segment.title}</h3>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+        <section
+          data-slide-index={5}
+          className="relative flex min-h-screen snap-start items-center justify-center overflow-hidden px-4 py-16 sm:px-8"
+          style={{
+            backgroundImage:
+              "linear-gradient(130deg, rgba(8,31,24,.90), rgba(15,61,46,.84), rgba(8,31,24,.92)), url('https://images.unsplash.com/photo-1556745757-8d76bdb6984b?auto=format&fit=crop&w=1920&q=80')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.7 }}
+            className="mx-auto w-full max-w-4xl rounded-3xl border border-[#d4af37]/40 bg-black/35 p-8 text-center shadow-2xl backdrop-blur-md sm:p-12"
+          >
+            <h2 className="text-3xl font-bold text-[#f4df9c] sm:text-4xl">Pronto para transformar sua gestão?</h2>
+            <p className="mt-4 text-white/82">
+              Eleve sua tomada de decisão com uma estrutura consultiva que integra estratégia, performance e visão de crescimento.
+            </p>
+
+            <div className="mt-7">
+              <Link
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#d4af37] px-7 py-3 text-base font-semibold text-[#0f3d2e] shadow-[0_0_30px_rgba(212,175,55,.35)] transition hover:bg-[#e4c761]"
+              >
+                <MessageCircle className="h-5 w-5" />
+                Agendar consulta gratuita
+              </Link>
+            </div>
+
+            <div className="mt-7 space-y-2 text-sm text-white/85">
+              <p>
+                Site: <span className="font-semibold text-[#f4df9c]">torres-brothers.vercel.app</span>
+              </p>
+              <p className="inline-flex items-center gap-2">
+                <Mail className="h-4 w-4 text-[#d4af37]" />
+                contato@torres-brothers.com.br
+              </p>
+            </div>
+          </motion.div>
+        </section>
+      </div>
+
+      <div className="pointer-events-none fixed right-3 top-1/2 z-30 hidden -translate-y-1/2 flex-col gap-3 lg:flex">
+        {slides.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => scrollToSlide(index)}
+            className={`pointer-events-auto h-2.5 w-2.5 rounded-full border transition ${
+              activeIndex === index
+                ? 'scale-125 border-[#d4af37] bg-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,.8)]'
+                : 'border-white/60 bg-white/20 hover:bg-white/40'
+            }`}
+            aria-label={`Ir para slide ${index + 1}`}
+          />
+        ))}
+      </div>
+
+      <div className="pointer-events-none fixed right-4 top-1/2 z-30 hidden -translate-y-1/2 lg:flex lg:flex-col lg:gap-2">
+        <button
+          onClick={() => scrollToSlide(activeIndex - 1)}
+          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:border-[#d4af37]/70 hover:text-[#f4df9c]"
+          aria-label="Slide anterior"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => scrollToSlide(activeIndex + 1)}
+          className="pointer-events-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white backdrop-blur transition hover:border-[#d4af37]/70 hover:text-[#f4df9c]"
+          aria-label="Próximo slide"
+        >
+          <ArrowDown className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="fixed bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/20 bg-black/35 px-3 py-2 backdrop-blur lg:hidden">
+        {slides.map((_, index) => (
+          <button
+            key={`mobile-${index}`}
+            onClick={() => scrollToSlide(index)}
+            className={`h-2.5 w-2.5 rounded-full transition ${activeIndex === index ? 'bg-[#d4af37]' : 'bg-white/45'}`}
+            aria-label={`Ir para slide ${index + 1}`}
+          />
+        ))}
+      </div>
     </main>
   );
 }
