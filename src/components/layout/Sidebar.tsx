@@ -61,7 +61,7 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
   const { isAdmin } = useAuth();
 
   const itemBaseClass =
-    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-all';
+    'flex items-center gap-3 rounded-xl px-3 py-2 text-[14px] transition-all';
   const itemActiveClass =
     'bg-primary text-primary-foreground font-semibold shadow-sm';
   const itemInactiveClass =
@@ -97,7 +97,7 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
 
       {/* Navigation */}
       <ScrollArea className="flex-1 py-3">
-        <nav className="space-y-1.5 px-3">
+        <nav className="space-y-0.5 px-3">
           {mainNavItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -118,13 +118,13 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
           })}
         </nav>
 
-        <div className="px-5 pt-5 pb-2">
+        <div className="px-5 pt-4 pb-1.5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
             Cadastros
           </p>
         </div>
 
-        <nav className="space-y-1.5 px-3">
+        <nav className="space-y-0.5 px-3">
           {cadastrosNavItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -145,13 +145,13 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
           })}
         </nav>
 
-        <div className="px-5 pt-5 pb-2">
+        <div className="px-5 pt-4 pb-1.5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
             Conta
           </p>
         </div>
 
-        <nav className="space-y-1.5 px-3 pb-4">
+        <nav className="space-y-0.5 px-3 pb-3">
           {accountNavItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -180,7 +180,7 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
               </p>
             </div>
 
-            <nav className="space-y-1.5 px-3 pb-4">
+            <nav className="space-y-0.5 px-3 pb-3">
               {adminNavItems.map((item) => {
                 const isActive = pathname === item.href;
                 return (

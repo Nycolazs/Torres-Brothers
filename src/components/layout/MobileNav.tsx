@@ -13,16 +13,16 @@ interface MobileNavProps {
 export function MobileNav({ open, onClose }: MobileNavProps) {
   return (
     <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <SheetContent side="left" className="p-0 w-[90vw] max-w-[360px] border-r border-emerald-100 bg-white">
-        <SheetHeader className="border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-4">
+      <SheetContent side="left" className="p-0 w-[280px] border-r border-sidebar-border bg-sidebar">
+        <SheetHeader className="border-b border-sidebar-border bg-sidebar px-4 py-3.5">
           <Link
             href="/dashboard"
             onClick={onClose}
             title="Ir para Visão Geral"
             className="flex items-center gap-2 cursor-pointer"
           >
-            <Image src="/logo.png" alt="Torres Brothers" width={30} height={30} className="h-7.5 w-auto" />
-            <SheetTitle className="font-[family-name:var(--font-amiri)] text-[15px] font-bold uppercase tracking-wide text-[#1B4332]">
+            <Image src="/logo.png" alt="Torres Brothers" width={28} height={28} className="h-7 w-auto" />
+            <SheetTitle className="font-[family-name:var(--font-amiri)] text-[15px] font-bold uppercase tracking-wide text-sidebar-foreground">
               Torres Brothers
             </SheetTitle>
           </Link>
