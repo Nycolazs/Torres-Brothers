@@ -101,8 +101,11 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
-    match /{path=**}/profile/{profileId} {
+    match /userIndex/{uid} {
       allow read: if isAdmin();
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if false;
     }
 
     match /users/{userId}/categories/{document=**} {

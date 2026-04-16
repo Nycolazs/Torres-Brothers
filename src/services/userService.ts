@@ -1,6 +1,6 @@
 import type { User } from 'firebase/auth';
 import {
-  collectionGroup,
+  collection,
   doc,
   getDoc,
   getDocs,
@@ -19,6 +19,10 @@ function systemConfigRef() {
 
 function profileRef(uid: string) {
   return doc(db, 'users', uid, 'profile', 'main');
+}
+
+function userIndexRef(uid: string) {
+  return doc(db, 'userIndex', uid);
 }
 
 function omitUndefined<T extends object>(obj: T): Partial<T> {
@@ -153,11 +157,18 @@ export async function ensureUserProfile(
   );
   const isAdmin = systemConfig.adminUid === firebaseUser.uid;
 
+  const profileData = omitUndefined(profile);
   if (!snapshot.exists()) {
-    await setDoc(ref, omitUndefined(profile), { merge: true });
+    await Promise.all([
+      setDoc(ref, profileData, { merge: true }),
+      setDoc(userIndexRef(firebaseUser.uid), profileData, { merge: true }),
+    ]);
   } else if (shouldSyncProfile(existingProfile, profile)) {
     if (isAdmin) {
-      await setDoc(ref, omitUndefined(profile), { merge: true });
+      await Promise.all([
+        setDoc(ref, profileData, { merge: true }),
+        setDoc(userIndexRef(firebaseUser.uid), profileData, { merge: true }),
+      ]);
     }
   }
 
@@ -169,7 +180,7 @@ export async function ensureUserProfile(
 }
 
 export async function listUserProfiles(): Promise<UserProfile[]> {
-  const snapshot = await getDocs(collectionGroup(db, 'profile'));
+  const snapshot = await getDocs(collection(db, 'userIndex'));
 
   return snapshot.docs
     .map((docSnap) => docSnap.data() as UserProfile)
@@ -193,8 +204,7 @@ export async function updateUserAccessStatus(
   }
 
   const now = Timestamp.now();
-
-  await updateDoc(profileRef(uid), {
+  const update = {
     accessStatus,
     role: 'user',
     approvedAt: accessStatus === 'approved' ? now : null,
@@ -202,5 +212,10 @@ export async function updateUserAccessStatus(
     rejectedAt: accessStatus === 'rejected' ? now : null,
     rejectedBy: accessStatus === 'rejected' ? adminUid : null,
     updatedAt: now,
-  });
+  };
+
+  await Promise.all([
+    updateDoc(profileRef(uid), update),
+    updateDoc(userIndexRef(uid), update),
+  ]);
 }
