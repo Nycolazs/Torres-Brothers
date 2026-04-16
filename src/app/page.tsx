@@ -4,129 +4,179 @@ import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowDown, ArrowUp, CheckCircle2, MessageCircle } from 'lucide-react';
+import { ArrowDown, CheckCircle2 } from 'lucide-react';
 
 const WHATSAPP = 'https://wa.me/5541987164811';
+const COMPANY_CNPJ = '66.121.072/0001-03';
+const YACACODE_URL = 'https://yacacode.vercel.app';
 
-/* ── Imagens Unsplash (pisos, limpeza, ambientes comerciais) ── */
-const IMG = {
-  hero:  'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1920&auto=format&fit=crop&q=85',
-  s1:    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop&q=80',
-  s2:    'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&auto=format&fit=crop&q=80',
-  s3:    'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&auto=format&fit=crop&q=80',
-  about: 'https://images.unsplash.com/photo-1565793298595-6a879b1d9492?w=1400&auto=format&fit=crop&q=80',
-};
+const MEDIA = {
+  hero: '/media/torres-brothers/supermarket-burnisher-machine.jpeg',
+  servicesWash: '/media/torres-brothers/warehouse-auto-scrubber.jpeg',
+  servicesPolish: '/media/torres-brothers/store-aisle-floor-scrubbing.jpeg',
+  servicesFinish: '/media/torres-brothers/granilite-final-shine.jpeg',
+  proofSplit: '/media/torres-brothers/granilite-before-after-split.jpeg',
+  proofLabeled: '/media/torres-brothers/granilite-before-after-labeled.jpeg',
+  proofLobby: '/media/torres-brothers/lobby-auto-scrubber.jpeg',
+  cta: '/media/torres-brothers/food-court-auto-scrubber.jpeg',
+  galleryProcess: '/media/torres-brothers/corridor-floor-polishing-process.jpeg',
+  galleryHallway: '/media/torres-brothers/hallway-floor-scrubbing.jpeg',
+  galleryMachine: '/media/torres-brothers/supermarket-burnisher-front.jpeg',
+} as const;
 
 const SERVICES = [
   {
     num: '01',
-    title: 'Lavagem Mecanizada',
-    description: 'Limpeza profunda com esfregadeira automática para galpões, depósitos e grandes áreas comerciais.',
-    image: IMG.s1,
+    title: 'Lavagem mecanizada',
+    description:
+      'Limpeza técnica para áreas amplas, corredores, salões e pisos de circulação intensa, com equipamento compatível com o tipo de superfície.',
+    image: MEDIA.servicesWash,
+    alt: 'Lavadora automática em operação sobre piso industrial.',
   },
   {
     num: '02',
-    title: 'Enceramento & Polimento',
-    description: 'Politriz de alta rotação para pisos comerciais: brilho intenso, proteção durável e acabamento premium.',
-    image: IMG.s2,
+    title: 'Polimento e recuperação de brilho',
+    description:
+      'Tratamento para devolver uniformidade visual, reflexo e sensação de ambiente bem cuidado em espaços comerciais e corporativos.',
+    image: MEDIA.servicesPolish,
+    alt: 'Politriz trabalhando em piso comercial com aplicação técnica.',
   },
   {
     num: '03',
-    title: 'Tratamento Especializado',
-    description: 'Cerâmica, porcelanato, vinílico ou concreto — técnica e produto certos para cada tipo de piso.',
-    image: IMG.s3,
+    title: 'Acabamento sob medida para o piso',
+    description:
+      'Granilite, concreto e outras superfícies pedem processo certo. A abordagem muda conforme desgaste, uso diário e objetivo final do cliente.',
+    image: MEDIA.servicesFinish,
+    alt: 'Superfície polida com brilho homogêneo e acabamento final.',
   },
 ] as const;
 
-const DIFERENCIAIS = [
-  'Equipe treinada e pontual',
-  'Equipamentos profissionais de alto rendimento',
-  'Produtos adequados para cada tipo de piso',
-  'Acabamento limpo e elegante para ambientes corporativos',
-];
+const HIGHLIGHTS = [
+  'Equipamentos para limpeza pesada, polimento e manutenção de acabamento.',
+  'Atendimento para comércios, restaurantes, condomínios, clínicas e galpões.',
+  'Execução com foco em organização, segurança e apresentação final do ambiente.',
+  'Resultado visual perceptível, com tratamento pensado para o uso real da área.',
+] as const;
 
-/* ── Framer variants ─────────────────────────────────────── */
+const PROCESS_GALLERY = [
+  {
+    src: MEDIA.galleryProcess,
+    alt: 'Processo de polimento em piso interno com máquina rotativa.',
+    label: 'Polimento técnico',
+  },
+  {
+    src: MEDIA.galleryHallway,
+    alt: 'Lavagem localizada em área interna com máquina de piso.',
+    label: 'Lavagem localizada',
+  },
+  {
+    src: MEDIA.galleryMachine,
+    alt: 'Equipamento profissional de polimento em ambiente comercial.',
+    label: 'Equipamento profissional',
+  },
+] as const;
+
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
-  visible: (d = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.65, delay: d } }),
+  visible: (delay = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.65, delay },
+  }),
 };
-
-const OVERLAY_HERO =
-  'linear-gradient(108deg, rgba(6,20,14,0.97) 0%, rgba(8,26,18,0.88) 42%, rgba(8,26,18,0.48) 68%, rgba(6,20,14,0.15) 100%)';
 
 const TOTAL = 4;
 
-/* ════════════════════════════════════════════════════════════
-   PAGE
-════════════════════════════════════════════════════════════ */
+function WhatsAppIcon({ className = 'h-5 w-5' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor">
+      <path d="M19.05 4.91A9.82 9.82 0 0 0 12.03 2a9.88 9.88 0 0 0-8.58 14.77L2 22l5.4-1.41a9.86 9.86 0 0 0 4.63 1.18h.01A9.97 9.97 0 0 0 22 11.88a9.8 9.8 0 0 0-2.95-6.97Zm-7.02 15.19h-.01a8.17 8.17 0 0 1-4.16-1.14l-.3-.18-3.2.84.86-3.12-.2-.32a8.14 8.14 0 0 1-1.28-4.3A8.3 8.3 0 0 1 12.04 3.7a8.06 8.06 0 0 1 5.83 2.43 8.13 8.13 0 0 1 2.42 5.8 8.3 8.3 0 0 1-8.26 8.17Zm4.53-6.1c-.25-.12-1.47-.72-1.7-.8-.23-.09-.4-.12-.56.12-.17.24-.64.8-.79.96-.15.17-.3.19-.56.07-.25-.13-1.08-.39-2.04-1.24-.75-.67-1.25-1.49-1.4-1.75-.15-.25-.02-.39.11-.51.12-.11.25-.29.38-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.12-.56-1.34-.77-1.83-.2-.48-.41-.42-.56-.42h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.43 1.02 2.6.13.17 1.77 2.7 4.29 3.78.6.26 1.08.42 1.45.53.61.19 1.16.16 1.6.1.49-.07 1.47-.6 1.68-1.17.21-.57.21-1.06.15-1.17-.06-.11-.23-.17-.48-.29Z" />
+    </svg>
+  );
+}
+
 export default function HomePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [idx, setIdx] = useState(0);
+  const [isWhatsAppExpanded, setIsWhatsAppExpanded] = useState(false);
 
-  const scrollTo = (i: number) => {
-    const c = containerRef.current;
-    if (!c) return;
-    const n = Math.max(0, Math.min(TOTAL - 1, i));
-    c.querySelector<HTMLElement>(`[data-slide="${n}"]`)
+  const scrollTo = (slide: number) => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const nextSlide = Math.max(0, Math.min(TOTAL - 1, slide));
+    container
+      .querySelector<HTMLElement>(`[data-slide="${nextSlide}"]`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setIdx(n);
+    setIdx(nextSlide);
   };
 
-  const sBase =
-    'relative flex min-h-screen snap-start flex-col overflow-hidden';
+  const sectionBase = 'relative flex h-[100dvh] snap-start flex-col overflow-hidden';
 
   return (
     <main
-      className="relative h-screen w-full overflow-hidden"
+      className="relative h-[100dvh] w-full overflow-hidden bg-[#060e0a]"
       style={{ backgroundColor: '#060e0a' }}
     >
-      {/* ── Scrollable snap container ── */}
       <div
         ref={containerRef}
-        className="presentation-scrollbar h-screen snap-y snap-mandatory overflow-y-auto scroll-smooth"
-        onScroll={(e) => {
-          const el = e.currentTarget;
-          const n = Math.round(el.scrollTop / Math.max(el.clientHeight, 1));
-          if (n !== idx) setIdx(n);
+        className="presentation-scrollbar h-[100dvh] snap-y snap-mandatory overflow-y-auto scroll-smooth"
+        onScroll={(event) => {
+          const element = event.currentTarget;
+          const nextSlide = Math.round(element.scrollTop / Math.max(element.clientHeight, 1));
+          if (nextSlide !== idx) setIdx(nextSlide);
         }}
       >
-
-        {/* ════════════════════════════
-            SLIDE 0 — HERO
-        ════════════════════════════ */}
-        <section
-          data-slide="0"
-          className={sBase}
-          style={{
-            backgroundImage: `${OVERLAY_HERO}, url('${IMG.hero}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center 40%',
-          }}
-        >
-          {/* Brilho dourado sutil no canto */}
+        <section data-slide="0" className={`${sectionBase} justify-end`}>
+          <Image
+            src={MEDIA.hero}
+            alt=""
+            fill
+            preload
+            sizes="100vw"
+            className="object-cover object-center"
+          />
           <div
             className="pointer-events-none absolute inset-0"
-            style={{ background: 'radial-gradient(ellipse at 85% 8%, rgba(200,169,110,0.12) 0%, transparent 50%)' }}
+            style={{
+              background:
+                'linear-gradient(102deg, rgba(4,16,11,0.96) 0%, rgba(6,20,14,0.88) 38%, rgba(6,20,14,0.52) 68%, rgba(6,20,14,0.22) 100%)',
+            }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'radial-gradient(ellipse at 82% 10%, rgba(200,169,110,0.16) 0%, transparent 45%)',
+            }}
           />
 
-          <div className="relative z-10 flex flex-1 flex-col px-6 py-8 sm:px-12 lg:px-20">
-
-            {/* ── Header ── */}
+          <div className="relative z-10 flex h-full flex-col px-6 py-6 sm:px-12 sm:py-7 lg:px-20 lg:py-8">
             <motion.header
-              variants={fadeUp} custom={0} initial="hidden" animate="visible"
-              className="flex items-center justify-between"
+              variants={fadeUp}
+              custom={0}
+              initial="hidden"
+              animate="visible"
+              className="flex items-center justify-between gap-4"
             >
-              {/* Logo + nome */}
               <div className="flex items-center gap-4">
                 <div
-                  className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl"
+                  className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[8px]"
                   style={{
-                    border: '1.5px solid rgba(200,169,110,0.55)',
-                    background: 'rgba(8,26,18,0.85)',
-                    boxShadow: '0 0 28px rgba(200,169,110,0.20), inset 0 1px 0 rgba(200,169,110,0.12)',
+                    border: '1px solid rgba(200,169,110,0.5)',
+                    background: 'rgba(8,26,18,0.82)',
+                    boxShadow: '0 0 28px rgba(200,169,110,0.18)',
                   }}
                 >
-                  <Image src="/logo.png" alt="Torres Brothers" width={36} height={36} className="h-9 w-9 object-contain" priority />
+                  <Image
+                    src="/logo.png"
+                    alt="Torres Brothers"
+                    width={36}
+                    height={36}
+                    className="h-9 w-9 object-contain"
+                    loading="eager"
+                    fetchPriority="high"
+                  />
                 </div>
                 <div>
                   <p
@@ -137,73 +187,111 @@ export default function HomePage() {
                   </p>
                   <div className="mt-0.5 flex items-center gap-2">
                     <div style={{ width: 16, height: 1, backgroundColor: '#c8a96e' }} />
-                    <span className="text-[0.6rem] uppercase tracking-[0.22em] text-[#c8a96e] sm:text-[0.62rem] sm:tracking-[0.30em]">
-                      A arte de transformar e preservar espaços
+                    <span className="text-[0.6rem] uppercase tracking-[0.22em] text-[#c8a96e] sm:text-[0.62rem] sm:tracking-[0.3em]">
+                      Limpeza e revitalizacao de pisos
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* CTA desktop */}
               <Link
-                href={WHATSAPP} target="_blank" rel="noopener noreferrer"
-                className="hidden items-center gap-2 rounded-xl border border-[#c8a96e]/55 bg-[#c8a96e] px-5 py-2.5 text-sm font-semibold text-[#0b2416] shadow-[0_0_22px_rgba(200,169,110,0.28)] transition hover:scale-[1.04] md:inline-flex"
+                href={WHATSAPP}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden items-center gap-2 rounded-[8px] border border-[#c8a96e]/55 bg-[#c8a96e] px-5 py-2.5 text-sm font-semibold text-[#0b2416] shadow-[0_0_22px_rgba(200,169,110,0.28)] transition hover:scale-[1.03] md:inline-flex"
+                style={{ fontFamily: 'var(--font-dm-sans)' }}
               >
-                <MessageCircle className="h-4 w-4" />
+                <WhatsAppIcon className="h-4 w-4" />
                 Solicitar orçamento
               </Link>
             </motion.header>
 
-            {/* ── Conteúdo hero (inferior esquerdo) ── */}
-            <div className="mt-auto max-w-2xl pb-4">
+            <div className="mt-auto max-w-3xl pb-8 pt-10 sm:pb-12 sm:pt-20">
               <motion.span
-                variants={fadeUp} custom={0.18} initial="hidden" animate="visible"
-                className="mb-6 inline-block rounded-full border border-[#c8a96e]/50 bg-[#c8a96e]/10 px-4 py-1.5 text-[0.7rem] uppercase tracking-[0.24em] text-[#e3c78b]"
+                variants={fadeUp}
+                custom={0.18}
+                initial="hidden"
+                animate="visible"
+                className="inline-block border border-[#c8a96e]/45 bg-[#c8a96e]/10 px-4 py-1.5 text-[0.72rem] uppercase tracking-[0.24em] text-[#e3c78b]"
+                style={{ borderRadius: 8 }}
               >
-                Solução profissional em limpeza de pisos
+                Lavagem técnica, polimento e acabamento profissional
               </motion.span>
 
               <motion.h1
-                variants={fadeUp} custom={0.28} initial="hidden" animate="visible"
-                className="text-[clamp(1.85rem,6.5vw,5.2rem)] leading-[1.06] text-[#f9f4ea]"
+                variants={fadeUp}
+                custom={0.28}
+                initial="hidden"
+                animate="visible"
+                className="mt-4 text-[clamp(1.72rem,5.6vw,4.85rem)] leading-[1.02] text-[#f9f4ea] sm:mt-5"
                 style={{ fontFamily: 'var(--font-amiri)' }}
               >
-                Sua empresa com aparência impecável e brilho premium.
+                Pisos bem cuidados valorizam o ambiente antes mesmo do primeiro atendimento.
               </motion.h1>
 
-              {/* Divisor dourado */}
               <motion.div
-                variants={fadeUp} custom={0.38} initial="hidden" animate="visible"
-                className="my-6 flex items-center gap-4"
+                variants={fadeUp}
+                custom={0.38}
+                initial="hidden"
+                animate="visible"
+                className="my-4 flex items-center gap-4 sm:my-5"
               >
-                <div style={{ width: 48, height: 1.5, backgroundColor: '#c8a96e', borderRadius: 1 }} />
-                <span className="text-sm text-[#d7e6de]/80">Curitiba e região</span>
+                <div style={{ width: 52, height: 1.5, backgroundColor: '#c8a96e', borderRadius: 1 }} />
+                <span className="text-sm text-[#d7e6de]/85">Curitiba e região</span>
               </motion.div>
 
               <motion.p
-                variants={fadeUp} custom={0.42} initial="hidden" animate="visible"
-                className="text-base leading-relaxed text-[#d8ece4]/85 sm:text-lg"
+                variants={fadeUp}
+                custom={0.44}
+                initial="hidden"
+                animate="visible"
+                className="max-w-2xl text-base leading-relaxed text-[#d8ece4]/88 sm:text-lg"
                 style={{ fontFamily: 'var(--font-dm-sans)' }}
               >
-                Atendemos ambientes comerciais e industriais com equipe treinada,
-                equipamentos profissionais e processos confiáveis.
+                A Torres Brothers atua em espacos comerciais, corporativos e de alto fluxo com
+                processo mecanizado, leitura técnica da superficie e acabamento pensado para o uso
+                real de cada area.
               </motion.p>
 
               <motion.div
-                variants={fadeUp} custom={0.54} initial="hidden" animate="visible"
-                className="mt-8 flex flex-col gap-3 sm:flex-row"
+                variants={fadeUp}
+                custom={0.52}
+                initial="hidden"
+                animate="visible"
+                className="mt-6 hidden flex-wrap gap-2 2xl:flex"
+                style={{ fontFamily: 'var(--font-dm-sans)' }}
+              >
+                {['Lavagem mecanizada', 'Polimento', 'Recuperação de brilho', 'Tratamento de pisos'].map((item) => (
+                  <span
+                    key={item}
+                    className="border border-white/14 bg-black/18 px-3 py-1.5 text-[0.7rem] uppercase tracking-[0.16em] text-[#e7efe9]"
+                    style={{ borderRadius: 8 }}
+                  >
+                    {item}
+                  </span>
+                ))}
+              </motion.div>
+
+              <motion.div
+                variants={fadeUp}
+                custom={0.6}
+                initial="hidden"
+                animate="visible"
+                className="mt-5 flex flex-col gap-3 sm:mt-6 sm:flex-row"
               >
                 <Link
-                  href={WHATSAPP} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#c8a96e] px-7 py-4 text-sm font-semibold text-[#0b2416] shadow-[0_0_32px_rgba(200,169,110,0.40)] transition hover:scale-[1.03] active:scale-100 sm:w-auto sm:py-3.5"
+                  href={WHATSAPP}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] bg-[#c8a96e] px-7 py-4 text-sm font-semibold text-[#0b2416] shadow-[0_0_30px_rgba(200,169,110,0.35)] transition hover:scale-[1.02] active:scale-100 sm:w-auto"
                   style={{ fontFamily: 'var(--font-dm-sans)' }}
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <WhatsAppIcon className="h-4 w-4" />
                   Falar com especialista
                 </Link>
                 <button
                   onClick={() => scrollTo(1)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#c8a96e]/50 bg-white/5 px-7 py-4 text-sm font-semibold text-[#f8f3e8] backdrop-blur-sm transition hover:border-[#c8a96e] hover:bg-white/8 sm:w-auto sm:py-3.5"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] border border-[#c8a96e]/45 bg-white/6 px-7 py-4 text-sm font-semibold text-[#f8f3e8] backdrop-blur-sm transition hover:border-[#c8a96e] hover:bg-white/10 sm:w-auto"
                   style={{ fontFamily: 'var(--font-dm-sans)' }}
                 >
                   Ver serviços
@@ -214,258 +302,584 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ════════════════════════════
-            SLIDE 1 — SERVIÇOS
-        ════════════════════════════ */}
         <section
           data-slide="1"
-          className="relative flex min-h-screen snap-start flex-col items-center justify-center"
-          style={{ backgroundColor: '#071610' }}
+          className={`${sectionBase} items-center justify-center bg-[#071610]`}
         >
-          {/* Textura radial */}
           <div
             className="pointer-events-none absolute inset-0"
-            style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(200,169,110,0.07) 0%, transparent 55%)' }}
+            style={{
+              background: 'radial-gradient(ellipse at 50% 0%, rgba(200,169,110,0.08) 0%, transparent 58%)',
+            }}
           />
 
-          <div className="relative z-10 mx-auto w-full max-w-7xl px-6 py-10 sm:px-12 md:py-16 lg:px-20">
+          <div className="relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col justify-center px-6 py-6 sm:px-12 sm:py-8 lg:px-20 lg:py-10">
             <motion.div
-              variants={fadeUp} custom={0} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }}
-              className="mb-7 text-center md:mb-10"
+              variants={fadeUp}
+              custom={0}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              className="mb-5 max-w-3xl md:mb-7"
             >
-              <p className="text-[0.7rem] uppercase tracking-[0.28em] text-[#c8a96e]">O que fazemos</p>
+              <p className="text-[0.72rem] uppercase tracking-[0.28em] text-[#c8a96e]">O que a empresa entrega</p>
               <h2
-                className="mt-2 text-[clamp(1.75rem,4.5vw,3.6rem)] leading-tight text-[#f8f3e8]"
+                className="mt-2 text-[clamp(1.9rem,4.6vw,3.8rem)] leading-tight text-[#f8f3e8]"
                 style={{ fontFamily: 'var(--font-amiri)' }}
               >
-                Serviços Torres Brothers
+                Servico certo para cada piso, com imagem real de resultado.
               </h2>
-              <div className="mx-auto mt-3 flex justify-center">
-                <div style={{ width: 48, height: 1.5, backgroundColor: '#c8a96e', borderRadius: 1 }} />
-              </div>
+              <p
+                className="mt-4 max-w-2xl text-base leading-relaxed text-[#b6d4c4]/88"
+                style={{ fontFamily: 'var(--font-dm-sans)' }}
+              >
+                O foco nao e apenas limpar. E entregar um piso que suporte a rotina, comunique
+                cuidado e mantenha boa apresentacao em ambientes de trabalho, venda ou circulacao
+                intensa.
+              </p>
             </motion.div>
 
-            {/* Mobile: horizontal scroll carousel. Desktop: 3-col grid */}
-            <div className="no-scrollbar -mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 sm:-mx-12 sm:px-12 md:mx-0 md:grid md:grid-cols-3 md:gap-5 md:snap-none md:overflow-visible md:px-0 md:pb-0">
-              {SERVICES.map((s, i) => (
+            <div className="no-scrollbar -mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 sm:-mx-12 sm:px-12 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:snap-none md:overflow-visible md:px-0 md:pb-0">
+              {SERVICES.map((service, index) => (
                 <motion.article
-                  key={s.num}
-                  variants={fadeUp} custom={i * 0.1} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.15 }}
-                  className="group flex w-[80vw] shrink-0 snap-center flex-col overflow-hidden rounded-2xl transition duration-300 hover:-translate-y-2 sm:w-[62vw] md:w-auto md:shrink"
-                  style={{ border: '1px solid rgba(200,169,110,0.25)', backgroundColor: '#0c2b1e' }}
+                  key={service.num}
+                  variants={fadeUp}
+                  custom={index * 0.1}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, amount: 0.18 }}
+                  className="group flex w-[78vw] shrink-0 snap-center flex-col overflow-hidden border border-[#c8a96e]/22 bg-[#0b2418] shadow-[0_24px_60px_rgba(0,0,0,0.18)] sm:w-[58vw] md:w-auto md:shrink"
+                  style={{ borderRadius: 8 }}
                 >
-                  {/* Imagem */}
-                  <div
-                    className="h-44 origin-center transition duration-500 group-hover:scale-105 md:h-52"
-                    style={{
-                      backgroundImage: `linear-gradient(180deg, rgba(7,22,16,0.05) 0%, rgba(7,22,16,0.65) 100%), url('${s.image}')`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
-                  {/* Texto */}
-                  <div className="flex flex-1 flex-col p-5 md:p-6">
-                    <div className="mb-3 flex items-center gap-3">
-                      <span
-                        className="text-4xl leading-none text-[#c8a96e]/40"
-                        style={{ fontFamily: 'var(--font-amiri)' }}
-                      >
-                        {s.num}
-                      </span>
-                      <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(200,169,110,0.25)' }} />
-                    </div>
+                  <div className="relative aspect-[4/2.9] overflow-hidden">
+                    <Image
+                      src={service.image}
+                      alt={service.alt}
+                      fill
+                      sizes="(max-width: 768px) 82vw, (max-width: 1024px) 62vw, 33vw"
+                      className="object-cover transition duration-500 group-hover:scale-[1.04]"
+                    />
+                    <div
+                      className="pointer-events-none absolute inset-0"
+                      style={{
+                        background: 'linear-gradient(180deg, rgba(7,22,16,0.08) 0%, rgba(7,22,16,0.6) 100%)',
+                      }}
+                    />
+                    <span
+                      className="absolute left-4 top-4 border border-[#c8a96e]/35 bg-[#071610]/70 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#f3dbab]"
+                      style={{ borderRadius: 8, fontFamily: 'var(--font-dm-sans)' }}
+                    >
+                      {service.num}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-4 md:p-5">
                     <h3
-                      className="text-[1.4rem] leading-snug text-[#f8f3e8] md:text-[1.5rem]"
+                      className="text-[1.22rem] leading-snug text-[#f8f3e8] md:text-[1.45rem]"
                       style={{ fontFamily: 'var(--font-amiri)' }}
                     >
-                      {s.title}
+                      {service.title}
                     </h3>
                     <p
-                      className="mt-2.5 flex-1 text-sm leading-relaxed text-[#a8c8b8]/85"
+                      className="mt-2.5 flex-1 text-sm leading-relaxed text-[#a8c8b8]/88"
                       style={{ fontFamily: 'var(--font-dm-sans)' }}
                     >
-                      {s.description}
+                      {service.description}
                     </p>
                     <Link
-                      href={WHATSAPP} target="_blank" rel="noopener noreferrer"
-                      className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[#c8a96e] transition-all hover:gap-3"
+                      href={WHATSAPP}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[#c8a96e] transition-all hover:gap-3"
                       style={{ fontFamily: 'var(--font-dm-sans)' }}
                     >
-                      Solicitar serviço <ArrowDown className="h-3.5 w-3.5 rotate-[-90deg]" />
+                      Solicitar avaliacao
+                      <ArrowDown className="h-3.5 w-3.5 rotate-[-90deg]" />
                     </Link>
                   </div>
                 </motion.article>
               ))}
             </div>
 
-            {/* Mobile swipe hint */}
-            <p className="mt-3 text-center text-[0.65rem] uppercase tracking-[0.18em] text-[#c8a96e]/50 md:hidden">
-              deslize para ver mais
+            <p className="mt-2 text-center text-[0.65rem] uppercase tracking-[0.18em] text-[#c8a96e]/50 md:hidden">
+              deslize para ver os serviços
             </p>
           </div>
         </section>
 
-        {/* ════════════════════════════
-            SLIDE 2 — POR QUE NÓS
-        ════════════════════════════ */}
         <section
           data-slide="2"
-          className={`${sBase} items-center justify-center`}
-          style={{
-            backgroundImage: `linear-gradient(to right, rgba(6,20,14,1) 0%, rgba(6,20,14,0.95) 38%, rgba(6,20,14,0.60) 62%, rgba(6,20,14,0.10) 100%), url('${IMG.about}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center right',
-          }}
-        >
-          {/* Mobile overlay: full dark cover so text is legible on small screens */}
-          <div
-            className="pointer-events-none absolute inset-0 lg:hidden"
-            style={{ background: 'rgba(6,14,10,0.72)' }}
-          />
-
-          <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-10 px-6 py-10 sm:px-12 lg:gap-14 lg:grid-cols-2 lg:py-16 lg:px-20">
-
-            <motion.div
-              variants={fadeUp} custom={0} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.25 }}
-            >
-              <p className="mb-3 text-[0.7rem] uppercase tracking-[0.28em] text-[#c8a96e]">Por que a Torres Brothers?</p>
-              <h2
-                className="text-[clamp(2rem,4.5vw,3.6rem)] leading-tight text-[#f8f3e8]"
-                style={{ fontFamily: 'var(--font-amiri)' }}
-              >
-                Imagem profissional começa pelo chão do seu negócio.
-              </h2>
-
-              <div className="my-6" style={{ width: 48, height: 1.5, backgroundColor: '#c8a96e', borderRadius: 1 }} />
-
-              <p
-                className="max-w-lg text-base leading-relaxed text-[#b8d5c4]/90"
-                style={{ fontFamily: 'var(--font-dm-sans)' }}
-              >
-                Trabalhamos com padrão técnico e foco em resultado visual real.
-                Cada atendimento é planejado para reforçar a percepção de
-                cuidado e qualidade da sua empresa.
-              </p>
-
-              <ul className="mt-7 space-y-4">
-                {DIFERENCIAIS.map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#c8a96e]" />
-                    <span
-                      className="text-[#ddf0e6]"
-                      style={{ fontFamily: 'var(--font-dm-sans)' }}
-                    >
-                      {item}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-9">
-                <Link
-                  href={WHATSAPP} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#c8a96e] px-7 py-4 text-sm font-semibold text-[#0b2416] shadow-[0_0_28px_rgba(200,169,110,0.35)] transition hover:scale-[1.03] sm:w-auto sm:py-3.5"
-                  style={{ fontFamily: 'var(--font-dm-sans)' }}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Solicitar visita técnica
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Coluna direita vazia — a imagem de fundo aparece aqui (desktop only) */}
-            <div className="hidden lg:block" />
-          </div>
-        </section>
-
-        {/* ════════════════════════════
-            SLIDE 3 — CTA FINAL
-        ════════════════════════════ */}
-        <section
-          data-slide="3"
-          className={`${sBase} items-center justify-center`}
-          style={{ backgroundColor: '#060e0a' }}
+          className={`${sectionBase} justify-center bg-[#060f0b]`}
         >
           <div
             className="pointer-events-none absolute inset-0"
-            style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(200,169,110,0.10) 0%, transparent 60%)' }}
+            style={{
+              background: 'radial-gradient(ellipse at 78% 14%, rgba(200,169,110,0.1) 0%, transparent 48%)',
+            }}
+          />
+
+          <div className="relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col justify-center px-6 py-6 sm:px-12 sm:py-8 lg:px-20 lg:py-10">
+            <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:gap-8">
+              <motion.div
+                variants={fadeUp}
+                custom={0}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.25 }}
+              >
+                <p className="mb-3 text-[0.72rem] uppercase tracking-[0.28em] text-[#c8a96e]">
+                  Resultado que aparece
+                </p>
+                <h2
+                  className="text-[clamp(1.85rem,4.2vw,3.55rem)] leading-tight text-[#f8f3e8]"
+                  style={{ fontFamily: 'var(--font-amiri)' }}
+                >
+                  Antes, durante e depois com processo tecnico de verdade.
+                </h2>
+
+                <div className="my-5" style={{ width: 52, height: 1.5, backgroundColor: '#c8a96e', borderRadius: 1 }} />
+
+                <p
+                  className="max-w-xl text-base leading-relaxed text-[#b8d5c4]/90"
+                  style={{ fontFamily: 'var(--font-dm-sans)' }}
+                >
+                  Cada atendimento combina analise da superficie, escolha correta do equipamento e
+                  acabamento pensado para o uso diario do ambiente.
+                </p>
+
+                <ul className="mt-5 space-y-3">
+                  {HIGHLIGHTS.map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#c8a96e]" />
+                      <span
+                        className="text-sm leading-relaxed text-[#ddf0e6] sm:text-base"
+                        style={{ fontFamily: 'var(--font-dm-sans)' }}
+                      >
+                        {item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-6">
+                  <Link
+                    href={WHATSAPP}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] bg-[#c8a96e] px-7 py-4 text-sm font-semibold text-[#0b2416] shadow-[0_0_28px_rgba(200,169,110,0.3)] transition hover:scale-[1.02] sm:w-auto"
+                    style={{ fontFamily: 'var(--font-dm-sans)' }}
+                  >
+                    <WhatsAppIcon className="h-4 w-4" />
+                    Solicitar visita técnica
+                  </Link>
+                </div>
+              </motion.div>
+
+              <motion.div
+                variants={fadeUp}
+                custom={0.12}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.18 }}
+                className="lg:h-[29rem] xl:h-[31rem]"
+              >
+                <div className="no-scrollbar -mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2 lg:hidden">
+                  {[
+                    {
+                      src: MEDIA.proofSplit,
+                      alt: 'Comparativo visual entre piso sem polimento e piso com polimento.',
+                      eyebrow: 'comparativo real',
+                      title: 'Superficie com e sem polimento.',
+                    },
+                    {
+                      src: MEDIA.proofLabeled,
+                      alt: 'Placa comparando superficie nao polida e superficie polida.',
+                      eyebrow: 'leitura do acabamento',
+                      title: 'Evolucao visivel do brilho.',
+                    },
+                    {
+                      src: MEDIA.proofLobby,
+                      alt: 'Lavadora automatica trabalhando em area interna com piso brilhante.',
+                      eyebrow: 'operacao em ambiente interno',
+                      title: 'Limpeza mecanizada em alto fluxo.',
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.title}
+                      className="relative w-[68vw] shrink-0 snap-center overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.22)]"
+                      style={{ borderRadius: 8 }}
+                    >
+                      <div className="relative aspect-[4/5]">
+                        <Image
+                          src={item.src}
+                          alt={item.alt}
+                          fill
+                          sizes="68vw"
+                          className="object-cover"
+                        />
+                        <div
+                          className="pointer-events-none absolute inset-0"
+                          style={{ background: 'linear-gradient(180deg, rgba(7,22,16,0.04) 20%, rgba(7,22,16,0.66) 100%)' }}
+                        />
+                        <div className="absolute inset-x-0 bottom-0 p-4">
+                          <p
+                            className="text-[0.66rem] uppercase tracking-[0.18em] text-[#dcbf86]"
+                            style={{ fontFamily: 'var(--font-dm-sans)' }}
+                          >
+                            {item.eyebrow}
+                          </p>
+                          <p
+                            className="mt-1 text-lg leading-tight text-[#f8f3e8]"
+                            style={{ fontFamily: 'var(--font-amiri)' }}
+                          >
+                            {item.title}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden gap-3 lg:grid lg:h-full lg:grid-cols-2 lg:grid-rows-[1.12fr_0.88fr]">
+                  <div
+                    data-proof-desktop-card="split"
+                    className="relative h-full overflow-hidden border border-white/10 shadow-[0_24px_70px_rgba(0,0,0,0.24)] lg:row-span-2"
+                    style={{ borderRadius: 8 }}
+                  >
+                    <Image
+                      src={MEDIA.proofSplit}
+                      alt="Comparativo visual entre piso sem polimento e piso com polimento."
+                      fill
+                      sizes="40vw"
+                      className="object-cover object-bottom"
+                    />
+                    <div
+                      className="pointer-events-none absolute inset-0"
+                      style={{ background: 'linear-gradient(180deg, rgba(7,22,16,0.05) 20%, rgba(7,22,16,0.62) 100%)' }}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 p-4">
+                      <p
+                        className="text-[0.68rem] uppercase tracking-[0.18em] text-[#dcbf86]"
+                        style={{ fontFamily: 'var(--font-dm-sans)' }}
+                      >
+                        comparativo real
+                      </p>
+                      <p
+                        className="mt-1 text-lg leading-tight text-[#f8f3e8]"
+                        style={{ fontFamily: 'var(--font-amiri)' }}
+                      >
+                        Superficie com e sem polimento.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    data-proof-desktop-card="labeled"
+                    className="relative h-full overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.22)]"
+                    style={{ borderRadius: 8 }}
+                  >
+                    <Image
+                      src={MEDIA.proofLabeled}
+                      alt="Placa comparando superficie nao polida e superficie polida."
+                      fill
+                      sizes="26vw"
+                      className="object-cover object-bottom"
+                    />
+                    <div
+                      className="pointer-events-none absolute inset-0"
+                      style={{ background: 'linear-gradient(180deg, rgba(7,22,16,0.02) 30%, rgba(7,22,16,0.58) 100%)' }}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 p-4">
+                      <p
+                        className="text-[0.68rem] uppercase tracking-[0.18em] text-[#dcbf86]"
+                        style={{ fontFamily: 'var(--font-dm-sans)' }}
+                      >
+                        leitura do acabamento
+                      </p>
+                      <p
+                        className="mt-1 text-lg leading-tight text-[#f8f3e8]"
+                        style={{ fontFamily: 'var(--font-amiri)' }}
+                      >
+                        Evolucao visivel do brilho.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    data-proof-desktop-card="lobby"
+                    className="relative h-full overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.22)]"
+                    style={{ borderRadius: 8 }}
+                  >
+                    <Image
+                      src={MEDIA.proofLobby}
+                      alt="Lavadora automatica trabalhando em area interna com piso brilhante."
+                      fill
+                      sizes="26vw"
+                      className="object-cover"
+                    />
+                    <div
+                      className="pointer-events-none absolute inset-0"
+                      style={{ background: 'linear-gradient(180deg, rgba(7,22,16,0.05) 10%, rgba(7,22,16,0.62) 100%)' }}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 p-4">
+                      <p
+                        className="text-[0.68rem] uppercase tracking-[0.18em] text-[#dcbf86]"
+                        style={{ fontFamily: 'var(--font-dm-sans)' }}
+                      >
+                        operacao em ambiente interno
+                      </p>
+                      <p
+                        className="mt-1 text-lg leading-tight text-[#f8f3e8]"
+                        style={{ fontFamily: 'var(--font-amiri)' }}
+                      >
+                        Limpeza mecanizada em alto fluxo.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        <section data-slide="3" className={`${sectionBase} justify-center`}>
+          <Image
+            src={MEDIA.cta}
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover object-[center_25%]"
+          />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(5,14,10,0.88) 0%, rgba(5,14,10,0.8) 36%, rgba(5,14,10,0.9) 100%)',
+            }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: 'radial-gradient(ellipse at 50% 28%, rgba(200,169,110,0.1) 0%, transparent 55%)',
+            }}
           />
 
           <motion.div
-            variants={fadeUp} custom={0} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.25 }}
-            className="relative z-10 mx-auto w-full max-w-3xl px-6 py-16 text-center sm:px-10"
+            variants={fadeUp}
+            custom={0}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.25 }}
+            className="relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col px-6 py-5 sm:px-10 sm:py-6 lg:px-20 lg:py-7"
           >
-            {/* Logo + nome centrado */}
-            <div className="mb-8 flex flex-col items-center gap-3 sm:mb-10">
-              <div
-                className="flex h-[58px] w-[58px] items-center justify-center rounded-2xl sm:h-[72px] sm:w-[72px]"
-                style={{
-                  border: '1.5px solid rgba(200,169,110,0.55)',
-                  background: 'rgba(10,32,22,0.80)',
-                  boxShadow: '0 0 36px rgba(200,169,110,0.24), inset 0 1px 0 rgba(200,169,110,0.14)',
-                }}
-              >
-                <Image src="/logo.png" alt="Torres Brothers" width={40} height={40} className="h-10 w-10 object-contain sm:h-12 sm:w-12" />
+            <div className="grid min-h-0 grow items-center gap-5 lg:grid-cols-[0.92fr_1.08fr] lg:gap-7">
+            <div className="text-center lg:text-left">
+              <div className="mb-4 flex flex-col items-center gap-3 lg:items-start">
+                <div
+                  className="flex h-[58px] w-[58px] items-center justify-center border border-[#c8a96e]/55 bg-[rgba(10,32,22,0.78)] sm:h-[68px] sm:w-[68px]"
+                  style={{ borderRadius: 8, boxShadow: '0 0 36px rgba(200,169,110,0.22)' }}
+                >
+                  <Image
+                    src="/logo.png"
+                    alt="Torres Brothers"
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 object-contain sm:h-12 sm:w-12"
+                  />
+                </div>
+                <div>
+                  <p
+                    className="text-[1.75rem] font-bold uppercase leading-none tracking-wide text-[#f3e6cb] sm:text-[1.9rem]"
+                    style={{ fontFamily: 'var(--font-amiri)' }}
+                  >
+                    Torres Brothers
+                  </p>
+                  <div className="mx-auto mt-3 h-[1.5px] w-11 rounded-full bg-[#c8a96e] lg:mx-0" />
+                </div>
               </div>
+
               <p
-                className="text-[1.75rem] font-bold uppercase leading-none tracking-wide text-[#f3e6cb] sm:text-[2.1rem]"
-                style={{ fontFamily: 'var(--font-amiri)' }}
-              >
-                Torres Brothers
-              </p>
-              <div style={{ width: 44, height: 1.5, backgroundColor: '#c8a96e', borderRadius: 1 }} />
-            </div>
-
-            <h2
-              className="text-[clamp(2rem,4.5vw,3.5rem)] leading-tight text-[#f9f2e4]"
-              style={{ fontFamily: 'var(--font-amiri)' }}
-            >
-              Transforme a aparência do seu ambiente com acabamento profissional.
-            </h2>
-
-            <p
-              className="mx-auto mt-5 max-w-xl text-[#b8d5c4]/90"
-              style={{ fontFamily: 'var(--font-dm-sans)' }}
-            >
-              Envie uma mensagem e receba atendimento rápido para orçamento e planejamento do serviço.
-            </p>
-
-            <div className="mt-9">
-              <Link
-                href={WHATSAPP} target="_blank" rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#c8a96e] px-9 py-4 text-base font-semibold text-[#0b2416] shadow-[0_0_40px_rgba(200,169,110,0.45)] transition hover:scale-[1.04] active:scale-100 sm:w-auto"
+                className="text-[0.72rem] uppercase tracking-[0.28em] text-[#d9c089]"
                 style={{ fontFamily: 'var(--font-dm-sans)' }}
               >
-                <MessageCircle className="h-5 w-5" />
-                Chamar no WhatsApp
-              </Link>
+                Orçamento e visita técnica
+              </p>
+              <h2
+                className="mx-auto mt-2 max-w-2xl text-[clamp(1.85rem,4vw,3.15rem)] leading-tight text-[#f9f2e4] lg:mx-0"
+                style={{ fontFamily: 'var(--font-amiri)' }}
+              >
+                Seu piso pode comunicar mais cuidado, mais limpeza e mais padrao logo na entrada.
+              </h2>
+
+              <p
+                className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-[#c2ddd0]/90 sm:text-base lg:mx-0"
+                style={{ fontFamily: 'var(--font-dm-sans)' }}
+              >
+                Chame no WhatsApp para avaliar o melhor tratamento para o ambiente. A recomendacao
+                leva em conta o tipo de piso, o desgaste atual e a rotina da area.
+              </p>
+
+              <div className="mt-5 hidden flex-wrap justify-center gap-2 xl:flex xl:justify-start" style={{ fontFamily: 'var(--font-dm-sans)' }}>
+                {['Comercial', 'Corporativo', 'Restaurantes', 'Condominios', 'Galpões'].map((item) => (
+                  <span
+                    key={item}
+                    className="border border-white/14 bg-black/16 px-3 py-1.5 text-[0.7rem] uppercase tracking-[0.16em] text-[#eef6f1]"
+                    style={{ borderRadius: 8 }}
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-5">
+                <Link
+                  href={WHATSAPP}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-[8px] bg-[#c8a96e] px-9 py-4 text-base font-semibold text-[#0b2416] shadow-[0_0_40px_rgba(200,169,110,0.34)] transition hover:scale-[1.03] active:scale-100 sm:w-auto"
+                  style={{ fontFamily: 'var(--font-dm-sans)' }}
+                >
+                  <WhatsAppIcon className="h-5 w-5" />
+                  Chamar no WhatsApp
+                </Link>
+              </div>
             </div>
 
-            {/* Rodapé discreto */}
-            <p
-              className="mt-12 text-[0.68rem] uppercase tracking-[0.24em] text-[#4a7060]"
-              style={{ fontFamily: 'var(--font-dm-sans)' }}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div
+                className="relative overflow-hidden border border-white/10 bg-black/14 shadow-[0_20px_60px_rgba(0,0,0,0.22)] sm:col-span-2"
+                style={{ borderRadius: 8 }}
+              >
+                <div className="relative aspect-[16/8.5] sm:aspect-[16/7]">
+                  <Image
+                    src={MEDIA.cta}
+                    alt="Limpeza mecanizada em area interna com acabamento uniforme."
+                    fill
+                    sizes="(max-width: 640px) 100vw, 52vw"
+                    className="object-cover object-[center_25%]"
+                  />
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{ background: 'linear-gradient(180deg, rgba(7,22,16,0.04) 10%, rgba(7,22,16,0.62) 100%)' }}
+                  />
+                  <div className="absolute inset-x-0 bottom-0 p-4">
+                    <p
+                      className="text-[0.66rem] uppercase tracking-[0.18em] text-[#dcbf86]"
+                      style={{ fontFamily: 'var(--font-dm-sans)' }}
+                    >
+                      atendimento em campo
+                    </p>
+                    <p
+                      className="mt-1 text-lg leading-tight text-[#f8f3e8]"
+                      style={{ fontFamily: 'var(--font-amiri)' }}
+                    >
+                      Equipe, equipamento certo e acabamento pensado para a rotina.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {PROCESS_GALLERY.slice(0, 2).map((item) => (
+                <div
+                  key={item.label}
+                  className="relative hidden overflow-hidden border border-white/10 bg-black/14 shadow-[0_20px_60px_rgba(0,0,0,0.22)] sm:block"
+                  style={{ borderRadius: 8 }}
+                >
+                  <div className="relative aspect-[4/3]">
+                    <Image
+                      src={item.src}
+                      alt={item.alt}
+                      fill
+                      sizes="26vw"
+                      className="object-cover"
+                    />
+                    <div
+                      className="pointer-events-none absolute inset-0"
+                      style={{
+                        background: 'linear-gradient(180deg, rgba(7,22,16,0.04) 20%, rgba(7,22,16,0.64) 100%)',
+                      }}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 p-3">
+                      <p
+                        className="text-[0.66rem] uppercase tracking-[0.18em] text-[#dcbf86]"
+                        style={{ fontFamily: 'var(--font-dm-sans)' }}
+                      >
+                        {item.label}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </div>
+
+            <footer
+              className="mt-4 border-t border-white/10 bg-black/16 px-4 py-4 backdrop-blur-sm sm:px-5"
+              style={{ borderRadius: 8 }}
             >
-              Curitiba e região · torres-brothers.vercel.app
-            </p>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="space-y-1.5 text-center lg:text-left">
+                  <p
+                    className="text-[0.72rem] uppercase tracking-[0.2em] text-[#e8d8af]"
+                    style={{ fontFamily: 'var(--font-dm-sans)' }}
+                  >
+                    Torres Brothers
+                  </p>
+                  <p
+                    className="text-sm text-[#d6e7df]/88"
+                    style={{ fontFamily: 'var(--font-dm-sans)' }}
+                  >
+                    CNPJ {COMPANY_CNPJ}
+                  </p>
+                  <p
+                    className="text-sm text-[#8fb3a3]"
+                    style={{ fontFamily: 'var(--font-dm-sans)' }}
+                  >
+                    Curitiba e região · Atendimento sob agendamento
+                  </p>
+                </div>
+
+                <div className="flex flex-col items-center gap-3 lg:items-end">
+                  <Link
+                    href={WHATSAPP}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-[#dfeee8] transition hover:text-[#f3dbab]"
+                    style={{ fontFamily: 'var(--font-dm-sans)' }}
+                  >
+                    <WhatsAppIcon className="h-4 w-4" />
+                    WhatsApp comercial
+                  </Link>
+
+                  <Link
+                    href={YACACODE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-[8px] border border-[#c8a96e]/25 bg-[#0e2018]/72 px-3 py-2 text-sm text-[#d7ebe2] transition hover:border-[#c8a96e]/55 hover:bg-[#11281d]"
+                    style={{ fontFamily: 'var(--font-dm-sans)' }}
+                  >
+                    <span className="text-[#8fb3a3]">Desenvolvido por</span>
+                    <span className="font-semibold text-[#f3dbab]">YacaCode</span>
+                  </Link>
+                </div>
+              </div>
+            </footer>
           </motion.div>
         </section>
+      </div>
 
-      </div>{/* fim do scroll container */}
-
-      {/* ── Dots laterais ── */}
       <div className="pointer-events-none fixed right-5 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-3 md:flex">
-        {Array.from({ length: TOTAL }).map((_, i) => (
+        {Array.from({ length: TOTAL }).map((_, index) => (
           <button
-            key={i}
-            onClick={() => scrollTo(i)}
-            aria-label={`Slide ${i + 1}`}
+            key={index}
+            onClick={() => scrollTo(index)}
+            aria-label={`Slide ${index + 1}`}
             className="pointer-events-auto block transition-all duration-300"
             style={{
               width: 7,
-              height: i === idx ? 28 : 7,
+              height: index === idx ? 28 : 7,
               borderRadius: 9999,
-              backgroundColor: i === idx ? '#c8a96e' : 'rgba(245,240,230,0.25)',
+              backgroundColor: index === idx ? '#c8a96e' : 'rgba(245,240,230,0.25)',
               border: 'none',
               padding: 0,
               cursor: 'pointer',
@@ -474,55 +888,18 @@ export default function HomePage() {
         ))}
       </div>
 
-      ── Setas cima/baixo ──
-      <div className="pointer-events-none fixed right-5 top-1/2 z-40 mt-24 hidden -translate-y-1/2 flex-col gap-2 md:flex">
-        <button
-          onClick={() => scrollTo(idx - 1)}
-          className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur transition hover:border-[#c8a96e]/70 hover:text-[#c8a96e]"
-          aria-label="Slide anterior"
-        >
-          <ArrowUp className="h-3.5 w-3.5" />
-        </button>
-        <button
-          onClick={() => scrollTo(idx + 1)}
-          className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur transition hover:border-[#c8a96e]/70 hover:text-[#c8a96e]"
-          aria-label="Próximo slide"
-        >
-          <ArrowDown className="h-3.5 w-3.5" />
-        </button>
-      </div>
-
-      {/* ── Setas mobile (canto inferior direito) ── */}
-      <div className="pointer-events-none fixed bottom-5 right-4 z-40 flex items-center gap-2 md:hidden">
-        <button
-          onClick={() => scrollTo(idx - 1)}
-          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/60 text-white/80 backdrop-blur transition active:scale-90 hover:border-[#c8a96e]/70 hover:text-[#c8a96e]"
-          aria-label="Slide anterior"
-        >
-          <ArrowUp className="h-4 w-4" />
-        </button>
-        <button
-          onClick={() => scrollTo(idx + 1)}
-          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/60 text-white/80 backdrop-blur transition active:scale-90 hover:border-[#c8a96e]/70 hover:text-[#c8a96e]"
-          aria-label="Próximo slide"
-        >
-          <ArrowDown className="h-4 w-4" />
-        </button>
-      </div>
-
-      {/* ── Dots mobile (centro inferior) ── */}
       <div className="pointer-events-none fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 md:hidden">
-        {Array.from({ length: TOTAL }).map((_, i) => (
+        {Array.from({ length: TOTAL }).map((_, index) => (
           <button
-            key={i}
-            onClick={() => scrollTo(i)}
-            aria-label={`Slide ${i + 1}`}
+            key={index}
+            onClick={() => scrollTo(index)}
+            aria-label={`Slide ${index + 1}`}
             className="pointer-events-auto transition-all duration-300"
             style={{
-              width: i === idx ? 20 : 6,
+              width: index === idx ? 20 : 6,
               height: 6,
               borderRadius: 9999,
-              backgroundColor: i === idx ? '#c8a96e' : 'rgba(245,240,230,0.28)',
+              backgroundColor: index === idx ? '#c8a96e' : 'rgba(245,240,230,0.28)',
               border: 'none',
               padding: 0,
               cursor: 'pointer',
@@ -531,6 +908,39 @@ export default function HomePage() {
         ))}
       </div>
 
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.25 }}
+        className="pointer-events-none fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6"
+      >
+        <Link
+          href={WHATSAPP}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Falar no WhatsApp"
+          onMouseEnter={() => setIsWhatsAppExpanded(true)}
+          onMouseLeave={() => setIsWhatsAppExpanded(false)}
+          onFocus={() => setIsWhatsAppExpanded(true)}
+          onBlur={() => setIsWhatsAppExpanded(false)}
+          className={`group pointer-events-auto inline-flex h-14 w-14 items-center justify-center overflow-hidden bg-[#25D366] text-white shadow-[0_14px_32px_rgba(18,97,47,0.28)] transition-[width,transform,box-shadow] duration-300 hover:translate-y-[-1px] hover:shadow-[0_18px_40px_rgba(18,97,47,0.36)] sm:justify-start ${isWhatsAppExpanded ? 'sm:w-[246px]' : 'sm:w-14'}`}
+          style={{ borderRadius: 9999, fontFamily: 'var(--font-dm-sans)' }}
+        >
+          <span className="relative flex h-14 w-14 shrink-0 items-center justify-center text-white">
+            <WhatsAppIcon className="h-8 w-8" />
+          </span>
+          <span className={`hidden whitespace-nowrap pr-5 text-[0.98rem] font-semibold tracking-[-0.01em] text-white transition-opacity duration-200 sm:block ${isWhatsAppExpanded ? 'sm:opacity-100' : 'sm:opacity-0'}`}>
+            Fale no WhatsApp
+          </span>
+          <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-white/8 ring-inset" />
+          <span className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_48%)]" />
+          <span className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]" />
+          <span className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity group-hover:opacity-100 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12)_0%,transparent_42%)]" />
+          <span className="sr-only">
+            Fale no WhatsApp
+          </span>
+        </Link>
+      </motion.div>
     </main>
   );
 }
