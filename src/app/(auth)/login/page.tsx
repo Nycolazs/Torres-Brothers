@@ -35,14 +35,16 @@ export default function LoginPage() {
       const result = await signInWithGoogle();
       if (!result) return;
 
-      if (result.isNewUser) {
-        toast.success('Cadastro recebido. Agora é só aguardar a aprovação do administrador.');
-      } else if (result.profile.accessStatus === 'approved') {
+      if (result.profile.accessStatus === 'approved') {
         toast.success('Bem-vindo!');
       } else if (result.profile.accessStatus === 'rejected') {
-        toast.error('Seu acesso não foi aprovado.');
+        toast.error('Seu acesso foi negado pelo administrador.');
       } else {
-        toast.info('Seu cadastro está aguardando aprovação.');
+        toast.warning(
+          result.isNewUser
+            ? 'Cadastro recebido! Aguarde a aprovação do administrador para acessar o sistema.'
+            : 'Seu acesso ainda está aguardando aprovação do administrador.'
+        );
       }
 
       router.push(getAccessRoute(result.profile.accessStatus));
@@ -60,6 +62,8 @@ export default function LoginPage() {
         toast.error('API Key do Firebase inválida. Verifique as variáveis NEXT_PUBLIC_FIREBASE_* do projeto.');
       } else if (firebaseError.code === 'auth/app-not-authorized') {
         toast.error('Aplicação não autorizada no Firebase. Confira o domínio e as credenciais do projeto.');
+      } else if (firebaseError.code === 'permission-denied') {
+        toast.warning('Cadastro recebido! Aguarde a aprovação do administrador para acessar o sistema.');
       } else {
         toast.error(`Erro ao entrar com Google (${firebaseError.code || 'desconhecido'}).`);
       }

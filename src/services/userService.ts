@@ -159,10 +159,29 @@ export async function ensureUserProfile(
 
   const profileData = omitUndefined(profile);
   if (!snapshot.exists()) {
-    await Promise.all([
-      setDoc(ref, profileData, { merge: true }),
-      setDoc(userIndexRef(firebaseUser.uid), profileData, { merge: true }),
-    ]);
+    try {
+      await Promise.all([
+        setDoc(ref, profileData, { merge: true }),
+        setDoc(userIndexRef(firebaseUser.uid), profileData, { merge: true }),
+      ]);
+    } catch (err: unknown) {
+      const firebaseErr = err as { code?: string };
+      if (firebaseErr.code === 'permission-denied') {
+        // Race condition: onAuthStateChanged and signInWithGoogle both tried to
+        // create the profile concurrently. The second write becomes an update
+        // which fails because createdAt is not in the allowed update fields.
+        // Recover by reading the profile created by the first write.
+        const recovered = await getDoc(ref);
+        if (recovered.exists()) {
+          return {
+            profile: recovered.data() as UserProfile,
+            systemConfig,
+            isNewUser: true,
+          };
+        }
+      }
+      throw err;
+    }
   } else if (shouldSyncProfile(existingProfile, profile)) {
     if (isAdmin) {
       await Promise.all([
