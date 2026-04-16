@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -139,6 +139,47 @@ export default function HomePage() {
 
   const sectionBase = 'relative flex h-[100dvh] snap-start flex-col overflow-hidden';
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const sections = Array.from(
+      container.querySelectorAll<HTMLElement>('[data-slide]'),
+    );
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let nextIndex: number | null = null;
+        let highestRatio = 0;
+
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+
+          const slide = Number((entry.target as HTMLElement).dataset.slide);
+          if (!Number.isFinite(slide)) continue;
+
+          if (entry.intersectionRatio > highestRatio) {
+            highestRatio = entry.intersectionRatio;
+            nextIndex = slide;
+          }
+        }
+
+        if (nextIndex === null) return;
+
+        setIdx((current) => (current === nextIndex ? current : nextIndex));
+      },
+      {
+        root: container,
+        threshold: [0.3, 0.45, 0.6, 0.75, 0.9],
+      },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <main
       className="relative h-[100dvh] w-full overflow-hidden bg-[#060e0a]"
@@ -147,17 +188,6 @@ export default function HomePage() {
       <div
         ref={containerRef}
         className="presentation-scrollbar h-[100dvh] snap-y snap-mandatory overflow-y-auto scroll-smooth"
-        onScroll={(event) => {
-          const element = event.currentTarget;
-          const nextSlide = Math.max(
-            0,
-            Math.min(
-              TOTAL - 1,
-              Math.round(element.scrollTop / Math.max(element.clientHeight, 1)),
-            ),
-          );
-          if (nextSlide !== idx) setIdx(nextSlide);
-        }}
       >
         <section data-slide="0" className={`${sectionBase} justify-end`}>
           <Image
@@ -412,7 +442,7 @@ export default function HomePage() {
               </p>
             </motion.div>
 
-            <div className="no-scrollbar -mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 sm:-mx-12 sm:px-12 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:snap-none md:overflow-visible md:px-0 md:pb-0">
+            <div className="no-scrollbar -mx-6 flex snap-x snap-mandatory touch-pan-x gap-4 overflow-x-auto px-6 pb-2 overscroll-x-contain sm:-mx-12 sm:px-12 md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:snap-none md:overflow-visible md:px-0 md:pb-0">
               {SERVICES.map((service, index) => (
                 <motion.article
                   key={service.num}

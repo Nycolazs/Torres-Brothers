@@ -76,7 +76,8 @@ export default function LancamentosPage() {
     return transactions.filter(
       (t) =>
         t.description.toLowerCase().includes(term) ||
-        t.contactName?.toLowerCase().includes(term)
+        t.contactName?.toLowerCase().includes(term) ||
+        t.tags?.some((tag) => tag.toLowerCase().includes(term))
     );
   }, [transactions, search]);
 

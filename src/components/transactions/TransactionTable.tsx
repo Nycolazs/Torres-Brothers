@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
@@ -120,6 +121,24 @@ export function TransactionTable({
                           <p className="text-xs text-muted-foreground">
                             {transaction.contactName}
                           </p>
+                        )}
+                        {transaction.tags && transaction.tags.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {transaction.tags.slice(0, 3).map((tag) => (
+                              <Badge
+                                key={`${transaction.id}-${tag}`}
+                                variant="secondary"
+                                className="h-5 px-2 text-[10px]"
+                              >
+                                #{tag}
+                              </Badge>
+                            ))}
+                            {transaction.tags.length > 3 && (
+                              <Badge variant="outline" className="h-5 px-2 text-[10px]">
+                                +{transaction.tags.length - 3}
+                              </Badge>
+                            )}
+                          </div>
                         )}
                       </div>
                     </TableCell>

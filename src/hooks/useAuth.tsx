@@ -61,7 +61,11 @@ function AuthProvider({ children }: { children: ReactNode }) {
       );
 
       if (result.systemConfig.adminUid === firebaseUser.uid) {
-        await seedCompanyData(firebaseUser.uid);
+        try {
+          await seedCompanyData(firebaseUser.uid);
+        } catch (error) {
+          console.warn('[Auth] Seed default company data skipped:', error);
+        }
       }
 
       return result;

@@ -70,7 +70,7 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
   return (
     <aside
       className={cn(
-        'flex flex-col w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border',
+        'flex flex-col w-56 lg:w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border',
         className
       )}
     >

@@ -98,6 +98,26 @@ export function TransactionModal({
   const selectedPaymentMethod = watch('paymentMethod');
   const selectedRecurrenceType = watch('recurrenceType');
 
+  const parseTagsInput = (value?: string) => {
+    if (!value?.trim()) return [];
+
+    const seen = new Set<string>();
+    const parsed: string[] = [];
+
+    value
+      .split(/[,;\n]+/)
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .forEach((tag) => {
+        const normalized = tag.toLowerCase();
+        if (seen.has(normalized)) return;
+        seen.add(normalized);
+        parsed.push(tag);
+      });
+
+    return parsed;
+  };
+
   const getBankAccountLabel = (acc: BankAccount) => {
     const name = acc.name?.trim();
     const looksLikeToken = !!name && /^[A-Za-z0-9_-]{12,}$/.test(name);
@@ -154,7 +174,7 @@ export function TransactionModal({
       const formData: TransactionFormData = {
         ...data,
         id: transaction?.id,
-        tags: data.tags ? data.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+        tags: parseTagsInput(data.tags),
         paymentDate: data.status === 'paid' ? (data.paymentDate || new Date()) : undefined,
       };
       await onSubmit(formData);
