@@ -101,6 +101,10 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
     }
 
+    match /{path=**}/profile/{profileId} {
+      allow read: if isAdmin();
+    }
+
     match /users/{userId}/categories/{document=**} {
       allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
     }
