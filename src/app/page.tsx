@@ -868,7 +868,7 @@ export default function HomePage() {
         </section>
       </div>
 
-      <div className="pointer-events-none fixed right-5 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-3 md:flex">
+      <div className="pointer-events-none fixed right-4 top-1/2 z-40 hidden -translate-y-1/2 rounded-[10px] border border-white/12 bg-[#071610]/58 px-2.5 py-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm md:flex md:flex-col md:gap-3">
         {Array.from({ length: TOTAL }).map((_, index) => (
           <button
             key={index}
@@ -879,16 +879,17 @@ export default function HomePage() {
               width: 7,
               height: index === idx ? 28 : 7,
               borderRadius: 9999,
-              backgroundColor: index === idx ? '#c8a96e' : 'rgba(245,240,230,0.25)',
+              backgroundColor: index === idx ? '#c8a96e' : '#6f7d75',
               border: 'none',
               padding: 0,
               cursor: 'pointer',
+              boxShadow: index === idx ? '0 0 0 1px rgba(200,169,110,0.2), 0 0 18px rgba(200,169,110,0.25)' : 'none',
             }}
           />
         ))}
       </div>
 
-      <div className="pointer-events-none fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 md:hidden">
+      <div className="pointer-events-none fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/12 bg-[#071610]/62 px-3 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.24)] backdrop-blur-sm md:hidden">
         {Array.from({ length: TOTAL }).map((_, index) => (
           <button
             key={index}
@@ -899,10 +900,11 @@ export default function HomePage() {
               width: index === idx ? 20 : 6,
               height: 6,
               borderRadius: 9999,
-              backgroundColor: index === idx ? '#c8a96e' : 'rgba(245,240,230,0.28)',
+              backgroundColor: index === idx ? '#c8a96e' : '#6f7d75',
               border: 'none',
               padding: 0,
               cursor: 'pointer',
+              boxShadow: index === idx ? '0 0 0 1px rgba(200,169,110,0.2), 0 0 14px rgba(200,169,110,0.22)' : 'none',
             }}
           />
         ))}
