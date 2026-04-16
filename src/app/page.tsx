@@ -58,6 +58,30 @@ const HIGHLIGHTS = [
   'Resultado visual perceptível, com tratamento pensado para o uso real da área.',
 ] as const;
 
+const PROOF_CARDS = [
+  {
+    src: MEDIA.proofSplit,
+    alt: 'Comparativo visual entre piso sem polimento e piso com polimento.',
+    eyebrow: 'comparativo real',
+    title: 'Superficie com e sem polimento.',
+    chip: 'Antes e depois',
+  },
+  {
+    src: MEDIA.proofLabeled,
+    alt: 'Placa comparando superficie nao polida e superficie polida.',
+    eyebrow: 'leitura do acabamento',
+    title: 'Evolucao visivel do brilho.',
+    chip: 'Detalhe do brilho',
+  },
+  {
+    src: MEDIA.proofLobby,
+    alt: 'Lavadora automatica trabalhando em area interna com piso brilhante.',
+    eyebrow: 'operacao em ambiente interno',
+    title: 'Limpeza mecanizada em alto fluxo.',
+    chip: 'Operacao real',
+  },
+] as const;
+
 const PROCESS_GALLERY = [
   {
     src: MEDIA.galleryProcess,
@@ -99,6 +123,8 @@ export default function HomePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [idx, setIdx] = useState(0);
   const [isWhatsAppExpanded, setIsWhatsAppExpanded] = useState(false);
+  const [activeProofCard, setActiveProofCard] = useState(0);
+  const selectedProofCard = PROOF_CARDS[activeProofCard] ?? PROOF_CARDS[0];
 
   const scrollTo = (slide: number) => {
     const container = containerRef.current;
@@ -163,7 +189,7 @@ export default function HomePage() {
               custom={0}
               initial="hidden"
               animate="visible"
-              className="flex items-center justify-between gap-4"
+              className="hidden md:flex md:items-center md:justify-between"
             >
               <div className="flex items-center gap-4">
                 <div
@@ -186,14 +212,14 @@ export default function HomePage() {
                 </div>
                 <div>
                   <p
-                    className="text-[1.3rem] font-bold uppercase leading-[1.1] tracking-wide text-[#f3e6cb] sm:text-[1.7rem]"
+                    className="text-[1.7rem] font-bold uppercase leading-[1.06] tracking-wide text-[#f3e6cb]"
                     style={{ fontFamily: 'var(--font-amiri)' }}
                   >
                     Torres Brothers
                   </p>
                   <div className="mt-0.5 flex items-center gap-2">
                     <div style={{ width: 16, height: 1, backgroundColor: '#c8a96e' }} />
-                    <span className="text-[0.6rem] uppercase tracking-[0.22em] text-[#c8a96e] sm:text-[0.62rem] sm:tracking-[0.3em]">
+                    <span className="text-[0.62rem] uppercase tracking-[0.3em] text-[#c8a96e]">
                       Limpeza e revitalizacao de pisos
                     </span>
                   </div>
@@ -204,7 +230,7 @@ export default function HomePage() {
                 href={WHATSAPP}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden items-center gap-2 rounded-[8px] border border-[#c8a96e]/55 bg-[#c8a96e] px-5 py-2.5 text-sm font-semibold text-[#0b2416] shadow-[0_0_22px_rgba(200,169,110,0.28)] transition hover:scale-[1.03] md:inline-flex"
+                className="inline-flex items-center gap-2 rounded-[8px] border border-[#c8a96e]/55 bg-[#c8a96e] px-5 py-2.5 text-sm font-semibold text-[#0b2416] shadow-[0_0_22px_rgba(200,169,110,0.28)] transition hover:scale-[1.03]"
                 style={{ fontFamily: 'var(--font-dm-sans)' }}
               >
                 <WhatsAppIcon className="h-4 w-4" />
@@ -212,7 +238,48 @@ export default function HomePage() {
               </Link>
             </motion.header>
 
-            <div className="mt-auto max-w-3xl pb-8 pt-10 sm:pb-12 sm:pt-20">
+            <motion.div
+              variants={fadeUp}
+              custom={0}
+              initial="hidden"
+              animate="visible"
+              className="flex flex-1 flex-col items-center justify-center gap-4 text-center md:hidden"
+            >
+              <div
+                className="flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-[10px]"
+                style={{
+                  border: '1px solid rgba(200,169,110,0.5)',
+                  background: 'rgba(8,26,18,0.82)',
+                  boxShadow: '0 0 28px rgba(200,169,110,0.18)',
+                }}
+              >
+                <Image
+                  src="/logo.png"
+                  alt="Torres Brothers"
+                  width={36}
+                  height={36}
+                  className="h-12 w-12 object-contain"
+                  loading="eager"
+                  fetchPriority="high"
+                />
+              </div>
+              <div>
+                <p
+                  className="text-[1.95rem] font-bold uppercase leading-[1.06] tracking-wide text-[#f3e6cb] sm:text-[2.1rem]"
+                  style={{ fontFamily: 'var(--font-amiri)' }}
+                >
+                  Torres Brothers
+                </p>
+                <div className="mt-1 flex items-center justify-center gap-2">
+                  <div style={{ width: 16, height: 1, backgroundColor: '#c8a96e' }} />
+                  <span className="text-[0.72rem] uppercase tracking-[0.2em] text-[#c8a96e] sm:text-[0.76rem] sm:tracking-[0.24em]">
+                    Limpeza e revitalizacao de pisos
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+
+            <div className="max-w-3xl pb-8 sm:pb-12 md:mt-auto md:pt-10">
               <motion.span
                 variants={fadeUp}
                 custom={0.18}
@@ -454,8 +521,8 @@ export default function HomePage() {
                 </p>
 
                 <ul className="mt-5 space-y-3">
-                  {HIGHLIGHTS.map((item) => (
-                    <li key={item} className="flex items-start gap-3">
+                  {HIGHLIGHTS.map((item, index) => (
+                    <li key={item} className={index === 3 ? 'hidden items-start gap-3 sm:flex' : 'flex items-start gap-3'}>
                       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#c8a96e]" />
                       <span
                         className="text-sm leading-relaxed text-[#ddf0e6] sm:text-base"
@@ -489,61 +556,77 @@ export default function HomePage() {
                 viewport={{ once: true, amount: 0.18 }}
                 className="lg:h-[29rem] xl:h-[31rem]"
               >
-                <div className="no-scrollbar -mx-6 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2 lg:hidden">
-                  {[
-                    {
-                      src: MEDIA.proofSplit,
-                      alt: 'Comparativo visual entre piso sem polimento e piso com polimento.',
-                      eyebrow: 'comparativo real',
-                      title: 'Superficie com e sem polimento.',
-                    },
-                    {
-                      src: MEDIA.proofLabeled,
-                      alt: 'Placa comparando superficie nao polida e superficie polida.',
-                      eyebrow: 'leitura do acabamento',
-                      title: 'Evolucao visivel do brilho.',
-                    },
-                    {
-                      src: MEDIA.proofLobby,
-                      alt: 'Lavadora automatica trabalhando em area interna com piso brilhante.',
-                      eyebrow: 'operacao em ambiente interno',
-                      title: 'Limpeza mecanizada em alto fluxo.',
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.title}
-                      className="relative w-[68vw] shrink-0 snap-center overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.22)]"
-                      style={{ borderRadius: 8 }}
+                <div className="lg:hidden">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <p
+                      className="text-[0.66rem] uppercase tracking-[0.2em] text-[#dcbf86]"
+                      style={{ fontFamily: 'var(--font-dm-sans)' }}
                     >
-                      <div className="relative aspect-[4/5]">
-                        <Image
-                          src={item.src}
-                          alt={item.alt}
-                          fill
-                          sizes="68vw"
-                          className="object-cover"
-                        />
-                        <div
-                          className="pointer-events-none absolute inset-0"
-                          style={{ background: 'linear-gradient(180deg, rgba(7,22,16,0.04) 20%, rgba(7,22,16,0.66) 100%)' }}
-                        />
-                        <div className="absolute inset-x-0 bottom-0 p-4">
-                          <p
-                            className="text-[0.66rem] uppercase tracking-[0.18em] text-[#dcbf86]"
-                            style={{ fontFamily: 'var(--font-dm-sans)' }}
-                          >
-                            {item.eyebrow}
-                          </p>
-                          <p
-                            className="mt-1 text-lg leading-tight text-[#f8f3e8]"
-                            style={{ fontFamily: 'var(--font-amiri)' }}
-                          >
-                            {item.title}
-                          </p>
-                        </div>
+                      provas visuais
+                    </p>
+                    <p
+                      className="text-[0.62rem] uppercase tracking-[0.16em] text-[#8fb3a3]"
+                      style={{ fontFamily: 'var(--font-dm-sans)' }}
+                    >
+                      toque para alternar
+                    </p>
+                  </div>
+
+                  <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-1">
+                    {PROOF_CARDS.map((item, index) => {
+                      const isActive = index === activeProofCard;
+
+                      return (
+                        <button
+                          key={item.title}
+                          type="button"
+                          onClick={() => setActiveProofCard(index)}
+                          className="shrink-0 rounded-full border px-3 py-1.5 text-[0.68rem] font-medium uppercase tracking-[0.14em] transition"
+                          style={{
+                            fontFamily: 'var(--font-dm-sans)',
+                            borderColor: isActive ? 'rgba(200,169,110,0.65)' : 'rgba(255,255,255,0.18)',
+                            color: isActive ? '#f3dbab' : '#bdd7cb',
+                            backgroundColor: isActive ? 'rgba(200,169,110,0.16)' : 'rgba(9,27,19,0.68)',
+                          }}
+                        >
+                          {item.chip}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div
+                    className="relative overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.22)]"
+                    style={{ borderRadius: 8 }}
+                  >
+                    <div className="relative aspect-[16/11]">
+                      <Image
+                        src={selectedProofCard.src}
+                        alt={selectedProofCard.alt}
+                        fill
+                        sizes="100vw"
+                        className="object-cover"
+                      />
+                      <div
+                        className="pointer-events-none absolute inset-0"
+                        style={{ background: 'linear-gradient(180deg, rgba(7,22,16,0.04) 20%, rgba(7,22,16,0.66) 100%)' }}
+                      />
+                      <div className="absolute inset-x-0 bottom-0 p-4">
+                        <p
+                          className="text-[0.66rem] uppercase tracking-[0.18em] text-[#dcbf86]"
+                          style={{ fontFamily: 'var(--font-dm-sans)' }}
+                        >
+                          {selectedProofCard.eyebrow}
+                        </p>
+                        <p
+                          className="mt-1 text-[1.42rem] leading-tight text-[#f8f3e8]"
+                          style={{ fontFamily: 'var(--font-amiri)' }}
+                        >
+                          {selectedProofCard.title}
+                        </p>
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
 
                 <div className="hidden gap-3 lg:grid lg:h-full lg:grid-cols-2 lg:grid-rows-[1.12fr_0.88fr]">
