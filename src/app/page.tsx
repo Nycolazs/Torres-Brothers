@@ -138,7 +138,7 @@ export default function HomePage() {
                   <div className="mt-0.5 flex items-center gap-2">
                     <div style={{ width: 16, height: 1, backgroundColor: '#c8a96e' }} />
                     <span className="text-[0.62rem] uppercase tracking-[0.30em] text-[#c8a96e]">
-                      Pisos & Conservação
+                      A arte de transformar e preservar espaços
                     </span>
                   </div>
                 </div>

@@ -19,7 +19,7 @@ import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
 export function useTransactions(filters: ReportFilters, itemsPerPage: number = 10) {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastDoc, setLastDoc] = useState<DocumentSnapshot | null>(null);
@@ -28,10 +28,14 @@ export function useTransactions(filters: ReportFilters, itemsPerPage: number = 1
 
   const fetchTransactions = useCallback(
     async (pageDoc: DocumentSnapshot | null = null) => {
-      if (!user) return;
+      if (!companyUid) {
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
-        const result = await getTransactions(user.uid, filters, {
+        const result = await getTransactions(companyUid, filters, {
           itemsPerPage,
           lastDoc: pageDoc,
         });
@@ -45,7 +49,7 @@ export function useTransactions(filters: ReportFilters, itemsPerPage: number = 1
         setLoading(false);
       }
     },
-    [user, filters, itemsPerPage]
+    [companyUid, filters, itemsPerPage]
   );
 
   useEffect(() => {
@@ -67,62 +71,62 @@ export function useTransactions(filters: ReportFilters, itemsPerPage: number = 1
 
   const createTransaction = useCallback(
     async (data: TransactionFormData) => {
-      if (!user) return;
-      await createTx(user.uid, data);
+      if (!companyUid) return;
+      await createTx(companyUid, data);
       toast.success('Lançamento criado com sucesso!');
       refresh();
     },
-    [user, refresh]
+    [companyUid, refresh]
   );
 
   const updateTransaction = useCallback(
     async (id: string, data: Partial<TransactionFormData>) => {
-      if (!user) return;
-      await updateTx(user.uid, id, data);
+      if (!companyUid) return;
+      await updateTx(companyUid, id, data);
       toast.success('Lançamento atualizado!');
       refresh();
     },
-    [user, refresh]
+    [companyUid, refresh]
   );
 
   const deleteTransaction = useCallback(
     async (id: string) => {
-      if (!user) return;
-      await deleteTx(user.uid, id);
+      if (!companyUid) return;
+      await deleteTx(companyUid, id);
       toast.success('Lançamento excluído!');
       refresh();
     },
-    [user, refresh]
+    [companyUid, refresh]
   );
 
   const markAsPaid = useCallback(
     async (id: string, paymentDate: Date, bankAccountId: string) => {
-      if (!user) return;
-      await markTxPaid(user.uid, id, paymentDate, bankAccountId);
+      if (!companyUid) return;
+      await markTxPaid(companyUid, id, paymentDate, bankAccountId);
       toast.success('Lançamento marcado como pago!');
       refresh();
     },
-    [user, refresh]
+    [companyUid, refresh]
   );
 
   const bulkMarkAsPaid = useCallback(
     async (ids: string[], paymentDate: Date, bankAccountId: string) => {
-      if (!user) return;
-      await bulkMarkTxPaid(user.uid, ids, paymentDate, bankAccountId);
+      if (!companyUid) return;
+      await bulkMarkTxPaid(companyUid, ids, paymentDate, bankAccountId);
       toast.success(`${ids.length} lançamentos marcados como pagos!`);
       refresh();
     },
-    [user, refresh]
+    [companyUid, refresh]
   );
 
   const bulkDelete = useCallback(
     async (ids: string[]) => {
-      if (!user) return;
-      await bulkDeleteTx(user.uid, ids);
+      if (!companyUid) return;
+      await bulkDeleteTx(companyUid, ids);
       toast.success(`${ids.length} lançamentos excluídos!`);
       refresh();
     },
-    [user, refresh]
+    [companyUid, refresh]
   );
 
   return {
@@ -143,7 +147,7 @@ export function useTransactions(filters: ReportFilters, itemsPerPage: number = 1
 }
 
 export function useTransactionsSummary(startDate: Date, endDate: Date) {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const [summary, setSummary] = useState({
     totalIncome: 0,
     totalCosts: 0,
@@ -153,31 +157,41 @@ export function useTransactionsSummary(startDate: Date, endDate: Date) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
-    setLoading(true);
-    getTransactionsSummary(user.uid, startDate, endDate)
-      .then(setSummary)
-      .catch(() => toast.error('Erro ao carregar resumo.'))
-      .finally(() => setLoading(false));
-  }, [user, startDate, endDate]);
+    const activeCompanyUid = companyUid;
+    if (!activeCompanyUid) return;
+
+    async function loadSummary(activeUid: string) {
+      setLoading(true);
+      try {
+        const data = await getTransactionsSummary(activeUid, startDate, endDate);
+        setSummary(data);
+      } catch {
+        toast.error('Erro ao carregar resumo.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadSummary(activeCompanyUid);
+  }, [companyUid, startDate, endDate]);
 
   return { summary, loading };
 }
 
 export function useRecentTransactions(limit: number = 5) {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!companyUid) return;
     const now = new Date();
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-    getTransactionsByDateRange(user.uid, sixMonthsAgo, now)
+    getTransactionsByDateRange(companyUid, sixMonthsAgo, now)
       .then((data) => setTransactions(data.slice(-limit).reverse()))
       .catch(() => toast.error('Erro ao carregar transações recentes.'))
       .finally(() => setLoading(false));
-  }, [user, limit]);
+  }, [companyUid, limit]);
 
   return { transactions, loading };
 }

@@ -1,4 +1,12 @@
-import { TransactionType, TransactionStatus, PaymentMethod, BankAccountType } from '@/types';
+import {
+  TransactionType,
+  TransactionStatus,
+  PaymentMethod,
+  BankAccountType,
+  UserAccessStatus,
+} from '@/types';
+
+export const PRIMARY_COMPANY_NAME = 'Torres Brothers';
 
 // ── Default Categories ─────────────────────────────────────────────
 
@@ -73,6 +81,12 @@ export const BANK_ACCOUNT_TYPE_LABELS: Record<BankAccountType, string> = {
   savings: 'Poupança',
   cash: 'Caixa',
   investment: 'Investimento',
+};
+
+export const USER_ACCESS_STATUS_LABELS: Record<UserAccessStatus, string> = {
+  pending: 'Pendente',
+  approved: 'Aprovado',
+  rejected: 'Sem acesso',
 };
 
 // ── DRE Category Groups ────────────────────────────────────────────

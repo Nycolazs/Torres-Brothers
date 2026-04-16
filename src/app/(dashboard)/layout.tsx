@@ -6,17 +6,23 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Topbar } from '@/components/layout/Topbar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { useAuth } from '@/hooks/useAuth';
+import { getAccessRoute } from '@/lib/access';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading, hasDashboardAccess } = useAuth();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace('/login');
+      return;
     }
-  }, [user, loading, router]);
+
+    if (!loading && user && profile && !hasDashboardAccess) {
+      router.replace(getAccessRoute(profile.accessStatus));
+    }
+  }, [hasDashboardAccess, loading, profile, router, user]);
 
   if (loading) {
     return (
@@ -29,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  if (!user) {
+  if (!user || !profile || !hasDashboardAccess) {
     return null;
   }
 

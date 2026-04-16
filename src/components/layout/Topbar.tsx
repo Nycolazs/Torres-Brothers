@@ -38,6 +38,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
     '/centros-custo': { title: 'Centros de Custo', helper: 'Separe resultados por área' },
     '/orcamento': { title: 'Orçamento', helper: 'Defina metas e compare realizado x previsto' },
     '/perfil': { title: 'Configurações', helper: 'Atualize dados da conta e preferências' },
+    '/usuarios': { title: 'Usuários', helper: 'Aprove acessos e gerencie permissões do sistema' },
     '/ajuda': { title: 'Ajuda', helper: 'Aprenda a usar o sistema de forma simples' },
   };
 

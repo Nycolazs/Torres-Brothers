@@ -35,7 +35,7 @@ import {
 type FormData = z.infer<typeof costCenterSchema>;
 
 export default function CentrosCustoPage() {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const [centers, setCenters] = useState<CostCenter[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -48,17 +48,21 @@ export default function CentrosCustoPage() {
   });
 
   const fetch = useCallback(async () => {
-    if (!user) return;
+    if (!companyUid) {
+      setCenters([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const data = await getCostCenters(user.uid);
+      const data = await getCostCenters(companyUid);
       setCenters(data);
     } catch {
       toast.error('Erro ao carregar centros de custo.');
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [companyUid]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
@@ -75,13 +79,13 @@ export default function CentrosCustoPage() {
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!user) return;
+    if (!companyUid) return;
     try {
       if (editingCenter) {
-        await updateCostCenter(user.uid, editingCenter.id, data);
+        await updateCostCenter(companyUid, editingCenter.id, data);
         toast.success('Centro de custo atualizado!');
       } else {
-        await createCostCenter(user.uid, data);
+        await createCostCenter(companyUid, data);
         toast.success('Centro de custo criado!');
       }
       setModalOpen(false);
@@ -92,9 +96,9 @@ export default function CentrosCustoPage() {
   };
 
   const handleDelete = async () => {
-    if (!user || !deleteId) return;
+    if (!companyUid || !deleteId) return;
     try {
-      await deleteCostCenter(user.uid, deleteId);
+      await deleteCostCenter(companyUid, deleteId);
       toast.success('Centro de custo excluído!');
       setDeleteId(null);
       fetch();
@@ -104,9 +108,9 @@ export default function CentrosCustoPage() {
   };
 
   const toggleActive = async (center: CostCenter) => {
-    if (!user) return;
+    if (!companyUid) return;
     try {
-      await updateCostCenter(user.uid, center.id, { isActive: !center.isActive });
+      await updateCostCenter(companyUid, center.id, { isActive: !center.isActive });
       fetch();
     } catch {
       toast.error('Erro ao atualizar status.');

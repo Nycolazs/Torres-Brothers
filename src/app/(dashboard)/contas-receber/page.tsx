@@ -17,28 +17,38 @@ import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import { addDays, endOfDay, endOfMonth, startOfDay, isBefore, isToday } from 'date-fns';
 
 export default function ContasReceberPage() {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const { accounts } = useBankAccounts();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
-    setLoading(true);
-    getTransactionsByDateRange(user.uid, new Date(2020, 0, 1), new Date(2030, 11, 31))
-      .then((data) => {
+    const activeCompanyUid = companyUid;
+    if (!activeCompanyUid) return;
+
+    async function loadTransactions(activeUid: string) {
+      setLoading(true);
+      try {
+        const data = await getTransactionsByDateRange(
+          activeUid,
+          new Date(2020, 0, 1),
+          new Date(2030, 11, 31)
+        );
         const unpaid = data.filter(
           (t) => t.type === 'income' && t.status !== 'paid' && t.status !== 'cancelled'
         );
         setTransactions(unpaid);
-      })
-      .catch(() => toast.error('Erro ao carregar contas a receber.'))
-      .finally(() => setLoading(false));
-  }, [user]);
+      } catch {
+        toast.error('Erro ao carregar contas a receber.');
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  const now = new Date();
-
+    loadTransactions(activeCompanyUid);
+  }, [companyUid]);
   const groups = useMemo(() => {
+    const now = new Date();
     const overdue: Transaction[] = [];
     const today: Transaction[] = [];
     const thisWeek: Transaction[] = [];
@@ -56,21 +66,21 @@ export default function ContasReceberPage() {
       else future.push(t);
     }
     return { overdue, today, thisWeek, thisMonth, future };
-  }, [transactions, now]);
+  }, [transactions]);
 
   const totalOverdue = groups.overdue.reduce((s, t) => s + t.amount, 0);
   const totalAll = transactions.reduce((s, t) => s + t.amount, 0);
   const inadimplencia = totalAll > 0 ? (totalOverdue / totalAll) * 100 : 0;
 
   const handleMarkAsReceived = async (id: string) => {
-    if (!user) return;
+    if (!companyUid) return;
     const defaultAccount = accounts[0]?.id;
     if (!defaultAccount) {
       toast.error('Cadastre uma conta bancária primeiro.');
       return;
     }
     try {
-      await markAsPaid(user.uid, id, new Date(), defaultAccount);
+      await markAsPaid(companyUid, id, new Date(), defaultAccount);
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       toast.success('Recebimento confirmado!');
     } catch {

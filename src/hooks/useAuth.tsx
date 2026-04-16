@@ -3,32 +3,36 @@
 import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
 import {
   onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
-  sendPasswordResetEmail,
-  updateProfile,
   User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { UserProfile } from '@/types';
 import { seedDefaultCategories } from '@/services/categoryService';
 import { seedDefaultBankAccount } from '@/services/accountService';
 import { seedDefaultCostCenter } from '@/services/costCenterService';
+import { ensureUserProfile } from '@/services/userService';
+import { PRIMARY_COMPANY_NAME } from '@/constants';
+
+interface AuthResult {
+  profile: UserProfile;
+  isNewUser: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
+  companyUid: string | null;
+  isAdmin: boolean;
+  hasDashboardAccess: boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (name: string, email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<AuthResult | null>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
+  refreshProfile: () => Promise<UserProfile | null>;
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
 }
 
@@ -37,30 +41,10 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [companyUid, setCompanyUid] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = useCallback(async (uid: string) => {
-    const profileDoc = await getDoc(doc(db, 'users', uid, 'profile', 'main'));
-    if (profileDoc.exists()) {
-      setProfile(profileDoc.data() as UserProfile);
-    }
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        await loadProfile(firebaseUser.uid);
-      } else {
-        setProfile(null);
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [loadProfile]);
-
-  const seedNewUser = useCallback(async (uid: string) => {
+  const seedCompanyData = useCallback(async (uid: string) => {
     await Promise.all([
       seedDefaultCategories(uid),
       seedDefaultBankAccount(uid),
@@ -68,37 +52,37 @@ function AuthProvider({ children }: { children: ReactNode }) {
     ]);
   }, []);
 
-  const createProfile = useCallback(
-    async (uid: string, name: string, email: string, photoUrl?: string) => {
-      const profileData: UserProfile = {
-        uid,
-        name,
-        email,
-        currency: 'BRL',
-        locale: 'pt-BR',
-        photoUrl: photoUrl || undefined,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-      };
-      await setDoc(doc(db, 'users', uid, 'profile', 'main'), profileData);
-      setProfile(profileData);
+  const refreshProfileState = useCallback(
+    async (firebaseUser: User): Promise<AuthResult> => {
+      const result = await ensureUserProfile(firebaseUser);
+      setProfile(result.profile);
+      setCompanyUid(
+        result.profile.accessStatus === 'approved' ? result.systemConfig.adminUid : null
+      );
+
+      if (result.systemConfig.adminUid === firebaseUser.uid) {
+        await seedCompanyData(firebaseUser.uid);
+      }
+
+      return result;
     },
-    []
+    [seedCompanyData]
   );
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  }, []);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        await refreshProfileState(firebaseUser);
+      } else {
+        setProfile(null);
+        setCompanyUid(null);
+      }
+      setLoading(false);
+    });
 
-  const signUp = useCallback(
-    async (name: string, email: string, password: string) => {
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(cred.user, { displayName: name });
-      await createProfile(cred.user.uid, name, email);
-      await seedNewUser(cred.user.uid);
-    },
-    [createProfile, seedNewUser]
-  );
+    return () => unsubscribe();
+  }, [refreshProfileState]);
 
   const signInWithGoogle = useCallback(async () => {
     const provider = new GoogleAuthProvider();
@@ -115,58 +99,58 @@ function AuthProvider({ children }: { children: ReactNode }) {
         firebaseError.code === 'auth/web-storage-unsupported'
       ) {
         await signInWithRedirect(auth, provider);
-        return;
+        return null;
       }
       throw error;
     }
 
-    const profileDoc = await getDoc(
-      doc(db, 'users', cred.user.uid, 'profile', 'main')
-    );
-
-    if (!profileDoc.exists()) {
-      await createProfile(
-        cred.user.uid,
-        cred.user.displayName || 'Usuário',
-        cred.user.email || '',
-        cred.user.photoURL || undefined
-      );
-      await seedNewUser(cred.user.uid);
-    }
-  }, [createProfile, seedNewUser]);
+    return await refreshProfileState(cred.user);
+  }, [refreshProfileState]);
 
   const signOut = useCallback(async () => {
     await firebaseSignOut(auth);
     setUser(null);
     setProfile(null);
+    setCompanyUid(null);
   }, []);
 
-  const resetPassword = useCallback(async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
-  }, []);
+  const refreshProfile = useCallback(async () => {
+    if (!auth.currentUser) return null;
+
+    const result = await refreshProfileState(auth.currentUser);
+    return result.profile;
+  }, [refreshProfileState]);
 
   const updateUserProfile = useCallback(
     async (data: Partial<UserProfile>) => {
       if (!user) return;
       const ref = doc(db, 'users', user.uid, 'profile', 'main');
-      const updated = { ...data, updatedAt: Timestamp.now() };
+      const updated = {
+        ...data,
+        companyName: profile?.companyName || PRIMARY_COMPANY_NAME,
+        updatedAt: Timestamp.now(),
+      };
       await setDoc(ref, updated, { merge: true });
       setProfile((prev) => (prev ? { ...prev, ...updated } : prev));
     },
-    [user]
+    [profile?.companyName, user]
   );
+
+  const isAdmin = profile?.role === 'admin';
+  const hasDashboardAccess = profile?.accessStatus === 'approved';
 
   return (
     <AuthContext.Provider
       value={{
         user,
         profile,
+        companyUid,
+        isAdmin,
+        hasDashboardAccess,
         loading,
-        signIn,
-        signUp,
         signInWithGoogle,
         signOut,
-        resetPassword,
+        refreshProfile,
         updateUserProfile,
       }}
     >

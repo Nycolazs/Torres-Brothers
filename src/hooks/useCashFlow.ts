@@ -9,12 +9,16 @@ import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 export function useCashFlowChart(months: number = 6) {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const [data, setData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!companyUid) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
 
     const fetchData = async () => {
       setLoading(true);
@@ -23,7 +27,7 @@ export function useCashFlowChart(months: number = 6) {
         const start = startOfMonth(subMonths(now, months - 1));
         const end = endOfMonth(now);
 
-        const transactions = await getTransactionsByDateRange(user.uid, start, end);
+        const transactions = await getTransactionsByDateRange(companyUid, start, end);
         const monthlyData: Record<string, { receitas: number; custos: number; despesas: number }> = {};
 
         for (let i = 0; i < months; i++) {
@@ -72,23 +76,27 @@ export function useCashFlowChart(months: number = 6) {
     };
 
     fetchData();
-  }, [user, months]);
+  }, [companyUid, months]);
 
   return { data, loading };
 }
 
 export function useExpenseBreakdown(startDate: Date, endDate: Date) {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const [data, setData] = useState<Array<{ name: string; value: number; color: string }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!companyUid) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
 
     const fetchData = async () => {
       setLoading(true);
       try {
-        const transactions = await getTransactionsByDateRange(user.uid, startDate, endDate);
+        const transactions = await getTransactionsByDateRange(companyUid, startDate, endDate);
         const categoryTotals: Record<string, { value: number; color: string }> = {};
 
         for (const t of transactions) {
@@ -119,7 +127,7 @@ export function useExpenseBreakdown(startDate: Date, endDate: Date) {
     };
 
     fetchData();
-  }, [user, startDate, endDate]);
+  }, [companyUid, startDate, endDate]);
 
   return { data, loading };
 }

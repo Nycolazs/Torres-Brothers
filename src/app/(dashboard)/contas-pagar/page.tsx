@@ -9,40 +9,48 @@ import { Badge } from '@/components/ui/badge';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { KpiCardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { StatusBadge } from '@/components/transactions/TransactionBadge';
 import { useAuth } from '@/hooks/useAuth';
 import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { getTransactionsByDateRange } from '@/services/transactionService';
 import { markAsPaid } from '@/services/transactionService';
 import { Transaction } from '@/types';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
-import { addDays, endOfDay, endOfMonth, startOfDay, isAfter, isBefore, isToday } from 'date-fns';
+import { addDays, endOfDay, endOfMonth, startOfDay, isBefore, isToday } from 'date-fns';
 
 export default function ContasPagarPage() {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const { accounts } = useBankAccounts();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    const activeCompanyUid = companyUid;
+    if (!activeCompanyUid) return;
     const start = new Date(2020, 0, 1);
     const end = new Date(2030, 11, 31);
-    setLoading(true);
-    getTransactionsByDateRange(user.uid, start, end)
-      .then((data) => {
+
+    async function loadTransactions(activeUid: string) {
+      setLoading(true);
+      try {
+        const data = await getTransactionsByDateRange(activeUid, start, end);
         const unpaid = data.filter(
-          (t) => (t.type === 'expense' || t.type === 'cost') && t.status !== 'paid' && t.status !== 'cancelled'
+          (t) =>
+            (t.type === 'expense' || t.type === 'cost') &&
+            t.status !== 'paid' &&
+            t.status !== 'cancelled'
         );
         setTransactions(unpaid);
-      })
-      .catch(() => toast.error('Erro ao carregar contas a pagar.'))
-      .finally(() => setLoading(false));
-  }, [user]);
+      } catch {
+        toast.error('Erro ao carregar contas a pagar.');
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  const now = new Date();
-
+    loadTransactions(activeCompanyUid);
+  }, [companyUid]);
   const groups = useMemo(() => {
+    const now = new Date();
     const overdue: Transaction[] = [];
     const today: Transaction[] = [];
     const thisWeek: Transaction[] = [];
@@ -68,7 +76,7 @@ export default function ContasPagarPage() {
     }
 
     return { overdue, today, thisWeek, thisMonth, future };
-  }, [transactions, now]);
+  }, [transactions]);
 
   const totalOverdue = groups.overdue.reduce((s, t) => s + t.amount, 0);
   const total7Days = [...groups.today, ...groups.thisWeek].reduce((s, t) => s + t.amount, 0);
@@ -78,14 +86,14 @@ export default function ContasPagarPage() {
   );
 
   const handleMarkAsPaid = async (id: string) => {
-    if (!user) return;
+    if (!companyUid) return;
     const defaultAccount = accounts[0]?.id;
     if (!defaultAccount) {
       toast.error('Cadastre uma conta bancária primeiro.');
       return;
     }
     try {
-      await markAsPaid(user.uid, id, new Date(), defaultAccount);
+      await markAsPaid(companyUid, id, new Date(), defaultAccount);
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       toast.success('Conta marcada como paga!');
     } catch {

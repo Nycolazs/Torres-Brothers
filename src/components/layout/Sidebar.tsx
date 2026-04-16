@@ -18,9 +18,11 @@ import {
   PieChart,
   Settings,
   CircleHelp,
+  Users,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks/useAuth';
 
 const mainNavItems = [
   { href: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard, hint: 'Indicadores principais da operação' },
@@ -44,6 +46,10 @@ const accountNavItems = [
   { href: '/perfil', label: 'Configurações', icon: Settings, hint: 'Perfil, segurança e preferências' },
 ];
 
+const adminNavItems = [
+  { href: '/usuarios', label: 'Usuários', icon: Users, hint: 'Aprove acessos e gerencie permissões' },
+];
+
 interface SidebarProps {
   className?: string;
   onNavigate?: () => void;
@@ -52,6 +58,7 @@ interface SidebarProps {
 
 export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProps) {
   const pathname = usePathname();
+  const { isAdmin } = useAuth();
 
   const itemBaseClass =
     'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-all';
@@ -164,6 +171,37 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
             );
           })}
         </nav>
+
+        {isAdmin && (
+          <>
+            <div className="px-5 pt-5 pb-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                Administração
+              </p>
+            </div>
+
+            <nav className="space-y-1.5 px-3 pb-4">
+              {adminNavItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
+                    title={item.hint}
+                    className={cn(
+                      itemBaseClass,
+                      isActive ? itemActiveClass : itemInactiveClass
+                    )}
+                  >
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </>
+        )}
       </ScrollArea>
     </aside>
   );

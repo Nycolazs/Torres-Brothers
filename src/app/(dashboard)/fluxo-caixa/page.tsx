@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import dynamic from 'next/dynamic';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   AreaChart,
@@ -14,7 +13,6 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -29,7 +27,7 @@ import { DateRangePicker } from '@/components/shared/DateRangePicker';
 import { useAuth } from '@/hooks/useAuth';
 import { getTransactionsByDateRange } from '@/services/transactionService';
 import { Transaction } from '@/types';
-import { cn, formatCurrency, formatDate } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import {
   startOfMonth,
   endOfMonth,
@@ -38,8 +36,6 @@ import {
   format,
   eachDayOfInterval,
   eachMonthOfInterval,
-  startOfDay,
-  endOfDay,
   isSameDay,
   isSameMonth,
   addDays,
@@ -47,7 +43,7 @@ import {
 import { ptBR } from 'date-fns/locale';
 
 export default function FluxoCaixaPage() {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [regime, setRegime] = useState<'cash' | 'accrual'>('cash');
@@ -55,27 +51,44 @@ export default function FluxoCaixaPage() {
   const [dateTo, setDateTo] = useState<Date>(endOfMonth(addMonths(new Date(), 2)));
 
   useEffect(() => {
-    if (!user) return;
-    setLoading(true);
-    getTransactionsByDateRange(user.uid, dateFrom, dateTo)
-      .then(setTransactions)
-      .catch(() => toast.error('Erro ao carregar fluxo de caixa.'))
-      .finally(() => setLoading(false));
-  }, [user, dateFrom, dateTo]);
+    const activeCompanyUid = companyUid;
+    if (!activeCompanyUid) return;
 
-  const getTransactionDate = (t: Transaction) => {
-    if (regime === 'cash') {
-      return t.paymentDate ? t.paymentDate.toDate() : t.dueDate.toDate();
+    async function loadTransactions(activeUid: string) {
+      setLoading(true);
+      try {
+        const data = await getTransactionsByDateRange(activeUid, dateFrom, dateTo);
+        setTransactions(data);
+      } catch {
+        toast.error('Erro ao carregar fluxo de caixa.');
+      } finally {
+        setLoading(false);
+      }
     }
-    return t.competenceDate.toDate();
-  };
+
+    loadTransactions(activeCompanyUid);
+  }, [companyUid, dateFrom, dateTo]);
+
+  const getTransactionDate = useCallback(
+    (t: Transaction) => {
+      if (regime === 'cash') {
+        return t.paymentDate ? t.paymentDate.toDate() : t.dueDate.toDate();
+      }
+      return t.competenceDate.toDate();
+    },
+    [regime]
+  );
 
   // Monthly view data
   const monthlyData = useMemo(() => {
     const months = eachMonthOfInterval({ start: dateFrom, end: dateTo });
-    let accumulated = 0;
-
-    return months.map((month) => {
+    return months.reduce<Array<{
+      month: string;
+      entradas: number;
+      saidas: number;
+      saldo: number;
+      acumulado: number;
+    }>>((rows, month) => {
       let income = 0;
       let expenses = 0;
 
@@ -89,49 +102,57 @@ export default function FluxoCaixaPage() {
       }
 
       const balance = income - expenses;
-      accumulated += balance;
+      const accumulated = (rows[rows.length - 1]?.acumulado || 0) + balance;
 
-      return {
-        month: format(month, 'MMM/yy', { locale: ptBR }),
-        entradas: income,
-        saidas: expenses,
-        saldo: balance,
-        acumulado: accumulated,
-      };
-    });
-  }, [transactions, dateFrom, dateTo, regime]);
+      return [
+        ...rows,
+        {
+          month: format(month, 'MMM/yy', { locale: ptBR }),
+          entradas: income,
+          saidas: expenses,
+          saldo: balance,
+          acumulado: accumulated,
+        },
+      ];
+    }, []);
+  }, [dateFrom, dateTo, getTransactionDate, transactions]);
 
   // Projection data for chart (next 90 days)
   const projectionData = useMemo(() => {
     const now = new Date();
     const end = addDays(now, 90);
     const days = eachDayOfInterval({ start: now, end });
-    let balance = 0;
+    const initialBalance = transactions.reduce((total, transaction) => {
+      if (transaction.status !== 'paid') return total;
 
-    // Calculate current balance from paid transactions
-    for (const t of transactions) {
-      if (t.status !== 'paid') continue;
-      const date = getTransactionDate(t);
-      if (date <= now) {
-        balance += t.type === 'income' ? t.amount : -t.amount;
-      }
-    }
+      const date = getTransactionDate(transaction);
+      if (date > now) return total;
 
-    return days.map((day) => {
-      for (const t of transactions) {
-        if (t.status === 'cancelled') continue;
-        const date = t.dueDate.toDate();
-        if (isSameDay(date, day)) {
-          balance += t.type === 'income' ? t.amount : -t.amount;
-        }
-      }
+      return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
+    }, 0);
 
-      return {
-        date: format(day, 'dd/MM', { locale: ptBR }),
-        saldo: Math.round(balance * 100) / 100,
-      };
-    });
-  }, [transactions, regime]);
+    return days.reduce<Array<{ date: string; saldo: number }>>((rows, day) => {
+      const balanceDelta = transactions.reduce((total, transaction) => {
+        if (transaction.status === 'cancelled') return total;
+
+        const date = transaction.dueDate.toDate();
+        if (!isSameDay(date, day)) return total;
+
+        return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
+      }, 0);
+
+      const previousBalance = rows[rows.length - 1]?.saldo ?? initialBalance;
+      const nextBalance = Math.round((previousBalance + balanceDelta) * 100) / 100;
+
+      return [
+        ...rows,
+        {
+          date: format(day, 'dd/MM', { locale: ptBR }),
+          saldo: nextBalance,
+        },
+      ];
+    }, []);
+  }, [getTransactionDate, transactions]);
 
   return (
     <div className="space-y-6">

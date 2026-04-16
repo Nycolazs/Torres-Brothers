@@ -27,7 +27,7 @@ import { startOfMonth, endOfMonth, isBefore, differenceInDays } from 'date-fns';
 import { TRANSACTION_TYPE_LABELS, TRANSACTION_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '@/constants';
 
 export default function RelatoriosPage() {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const { categories } = useCategories();
   const { accounts } = useBankAccounts();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -36,13 +36,23 @@ export default function RelatoriosPage() {
   const [dateTo, setDateTo] = useState<Date>(endOfMonth(new Date()));
 
   useEffect(() => {
-    if (!user) return;
-    setLoading(true);
-    getTransactionsByDateRange(user.uid, dateFrom, dateTo)
-      .then(setTransactions)
-      .catch(() => toast.error('Erro ao carregar relatórios.'))
-      .finally(() => setLoading(false));
-  }, [user, dateFrom, dateTo]);
+    const activeCompanyUid = companyUid;
+    if (!activeCompanyUid) return;
+
+    async function loadTransactions(activeUid: string) {
+      setLoading(true);
+      try {
+        const data = await getTransactionsByDateRange(activeUid, dateFrom, dateTo);
+        setTransactions(data);
+      } catch {
+        toast.error('Erro ao carregar relatórios.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadTransactions(activeCompanyUid);
+  }, [companyUid, dateFrom, dateTo]);
 
   const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);

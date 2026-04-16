@@ -6,22 +6,26 @@ import { getBankAccounts } from '@/services/accountService';
 import { useAuth } from './useAuth';
 
 export function useBankAccounts() {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
-    if (!user) return;
+    if (!companyUid) {
+      setAccounts([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const data = await getBankAccounts(user.uid);
+      const data = await getBankAccounts(companyUid);
       setAccounts(data);
     } catch (error) {
       console.error('Error fetching bank accounts:', error);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [companyUid]);
 
   useEffect(() => {
     fetch();

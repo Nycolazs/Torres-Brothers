@@ -14,6 +14,8 @@ export type PaymentMethod =
   | 'check';
 export type RecurrenceType = 'daily' | 'weekly' | 'monthly' | 'yearly';
 export type BankAccountType = 'checking' | 'savings' | 'cash' | 'investment';
+export type UserAccessStatus = 'pending' | 'approved' | 'rejected';
+export type UserRole = 'admin' | 'user';
 
 // ── Transaction ────────────────────────────────────────────────────
 
@@ -135,12 +137,25 @@ export interface UserProfile {
   uid: string;
   name: string;
   email: string;
-  companyName?: string;
+  companyName: string;
   companyDocument?: string; // CNPJ
   phone?: string;
   photoUrl?: string;
   currency: string;
   locale: string;
+  role: UserRole;
+  accessStatus: UserAccessStatus;
+  approvedAt?: Timestamp;
+  approvedBy?: string;
+  rejectedAt?: Timestamp;
+  rejectedBy?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface SystemConfig {
+  primaryCompanyName: string;
+  adminUid: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

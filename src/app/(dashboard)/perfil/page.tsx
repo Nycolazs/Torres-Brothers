@@ -10,7 +10,6 @@ import {
   User,
   Building2,
   Shield,
-  Link,
   Download,
   Trash2,
   Moon,
@@ -19,14 +18,12 @@ import {
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import {
-  updatePassword,
   deleteUser,
-  EmailAuthProvider,
   GoogleAuthProvider,
-  linkWithCredential,
   linkWithPopup,
 } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,24 +32,21 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { useAuth } from '@/hooks/useAuth';
-import { profileSchema, companySettingsSchema } from '@/lib/validations';
+import { profileSchema } from '@/lib/validations';
 import { auth } from '@/lib/firebase';
+import { USER_ACCESS_STATUS_LABELS } from '@/constants';
 
 type ProfileFormData = z.infer<typeof profileSchema>;
-type CompanyFormData = z.infer<typeof companySettingsSchema>;
 
 export default function PerfilPage() {
   const { user, profile, updateUserProfile } = useAuth();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirm: '' });
-  const [changingPassword, setChangingPassword] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
 
   const providerIds = user?.providerData?.map((p) => p.providerId) ?? [];
   const hasGoogleLinked = providerIds.includes('google.com');
-  const hasPasswordProvider = providerIds.includes('password');
 
   const {
     register: registerProfile,
@@ -67,85 +61,12 @@ export default function PerfilPage() {
     },
   });
 
-  const {
-    register: registerCompany,
-    handleSubmit: handleCompanySubmit,
-    formState: { errors: companyErrors, isDirty: companyDirty },
-  } = useForm<CompanyFormData>({
-    resolver: zodResolver(companySettingsSchema),
-    defaultValues: {
-      companyName: profile?.companyName || '',
-      companyDocument: profile?.companyDocument || '',
-      phone: profile?.phone || '',
-    },
-  });
-
   const onProfileSubmit = async (data: ProfileFormData) => {
     try {
       await updateUserProfile({ name: data.name, phone: data.phone });
       toast.success('Perfil atualizado!');
     } catch {
       toast.error('Erro ao atualizar perfil.');
-    }
-  };
-
-  const onCompanySubmit = async (data: CompanyFormData) => {
-    try {
-      await updateUserProfile({
-        companyName: data.companyName,
-        companyDocument: data.companyDocument,
-        phone: data.phone,
-      });
-      toast.success('Dados da empresa atualizados!');
-    } catch {
-      toast.error('Erro ao atualizar empresa.');
-    }
-  };
-
-  const handleChangePassword = async () => {
-    if (passwordForm.newPassword !== passwordForm.confirm) {
-      toast.error('As senhas não coincidem.');
-      return;
-    }
-    if (passwordForm.newPassword.length < 6) {
-      toast.error('A nova senha deve ter pelo menos 6 caracteres.');
-      return;
-    }
-    setChangingPassword(true);
-    try {
-      if (auth.currentUser) {
-        if (!hasPasswordProvider) {
-          if (!auth.currentUser.email) {
-            toast.error('Não foi possível identificar o e-mail da conta para criar senha.');
-            return;
-          }
-
-          const credential = EmailAuthProvider.credential(
-            auth.currentUser.email,
-            passwordForm.newPassword
-          );
-
-          await linkWithCredential(auth.currentUser, credential);
-          toast.success('Senha criada com sucesso! Agora você pode entrar com e-mail e senha.');
-          router.refresh();
-        } else {
-          await updatePassword(auth.currentUser, passwordForm.newPassword);
-          toast.success('Senha alterada com sucesso!');
-        }
-
-        setPasswordForm({ newPassword: '', confirm: '' });
-      }
-    } catch (error: unknown) {
-      const firebaseError = error as { code?: string };
-      if (firebaseError.code === 'auth/requires-recent-login') {
-        toast.error('Por segurança, faça login novamente e tente de novo.');
-      } else if (firebaseError.code === 'auth/provider-already-linked') {
-        toast.info('Sua conta de senha já está vinculada.');
-      } else {
-        toast.error('Erro ao salvar senha. Tente novamente.');
-      }
-    } finally {
-      setChangingPassword(false);
     }
   };
 
@@ -248,27 +169,26 @@ export default function PerfilPage() {
                 <Building2 className="h-4 w-4" />
                 Dados da Empresa
               </CardTitle>
+              <CardDescription>
+                Este financeiro trabalha com uma empresa principal unica.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCompanySubmit(onCompanySubmit)} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Nome da Empresa</Label>
-                  <Input {...registerCompany('companyName')} placeholder="Torres Brothers" />
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Nome da Empresa</Label>
+                <Input value={profile?.companyName || 'Torres Brothers'} disabled className="bg-muted" />
+              </div>
+              <div className="space-y-2">
+                <Label>Status do seu acesso</Label>
+                <div>
+                  <Badge variant="secondary">
+                    {USER_ACCESS_STATUS_LABELS[profile?.accessStatus || 'pending']}
+                  </Badge>
                 </div>
-                <div className="space-y-2">
-                  <Label>CNPJ</Label>
-                  <Input {...registerCompany('companyDocument')} placeholder="00.000.000/0001-00" />
-                  {companyErrors.companyDocument && <p className="text-sm text-destructive">{companyErrors.companyDocument.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label>Telefone</Label>
-                  <Input {...registerCompany('phone')} placeholder="(11) 99999-9999" />
-                </div>
-                <Button type="submit" disabled={!companyDirty}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar
-                </Button>
-              </form>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                O acesso ao dashboard e aos dados financeiros e controlado pela aprovacao do administrador.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -279,67 +199,28 @@ export default function PerfilPage() {
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <Shield className="h-4 w-4" />
-                Alterar Senha
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Nova Senha</Label>
-                <Input
-                  type="password"
-                  value={passwordForm.newPassword}
-                  onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))}
-                  placeholder="••••••••"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Confirmar Nova Senha</Label>
-                <Input
-                  type="password"
-                  value={passwordForm.confirm}
-                  onChange={(e) => setPasswordForm((p) => ({ ...p, confirm: e.target.value }))}
-                  placeholder="••••••••"
-                />
-              </div>
-              {!hasPasswordProvider && (
-                <p className="text-xs text-muted-foreground">
-                  Sua conta usa login social. Defina uma senha para também entrar com e-mail e senha.
-                </p>
-              )}
-              <Button onClick={handleChangePassword} disabled={changingPassword}>
-                {changingPassword
-                  ? hasPasswordProvider
-                    ? 'Alterando...'
-                    : 'Criando...'
-                  : hasPasswordProvider
-                    ? 'Alterar Senha'
-                    : 'Criar Senha'}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Link className="h-4 w-4" />
-                Vincular Google
+                Acesso com Google
               </CardTitle>
               <CardDescription>
-                Facilite seu acesso conectando sua conta atual ao Google.
+                O login no sistema acontece exclusivamente pela sua conta Google.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button
-                variant={hasGoogleLinked ? 'outline' : 'default'}
-                onClick={handleLinkGoogle}
-                disabled={linkingGoogle || hasGoogleLinked}
-              >
-                {hasGoogleLinked
-                  ? 'Google já vinculado'
-                  : linkingGoogle
-                    ? 'Vinculando...'
-                    : 'Vincular com Google'}
-              </Button>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Se a sua conta ja estiver conectada ao Google, esse e o unico metodo de entrada habilitado no sistema.
+              </p>
+              {hasGoogleLinked ? (
+                <Badge>Google conectado</Badge>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Para manter acesso depois de sair da sessao atual, conecte sua conta ao Google agora.
+                  </p>
+                  <Button onClick={handleLinkGoogle} disabled={linkingGoogle}>
+                    {linkingGoogle ? 'Conectando...' : 'Conectar com Google'}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

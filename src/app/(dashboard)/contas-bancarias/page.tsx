@@ -42,7 +42,7 @@ import { cn, formatCurrency } from '@/lib/utils';
 type FormData = z.infer<typeof bankAccountSchema>;
 
 export default function ContasBancariasPage() {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const { accounts, loading, refresh } = useBankAccounts();
   const [modalOpen, setModalOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
@@ -84,13 +84,13 @@ export default function ContasBancariasPage() {
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!user) return;
+    if (!companyUid) return;
     try {
       if (editingAccount) {
-        await updateBankAccount(user.uid, editingAccount.id, data);
+        await updateBankAccount(companyUid, editingAccount.id, data);
         toast.success('Conta atualizada!');
       } else {
-        await createBankAccount(user.uid, data);
+        await createBankAccount(companyUid, data);
         toast.success('Conta criada!');
       }
       setModalOpen(false);
@@ -101,9 +101,9 @@ export default function ContasBancariasPage() {
   };
 
   const handleDelete = async () => {
-    if (!user || !deleteId) return;
+    if (!companyUid || !deleteId) return;
     try {
-      await deleteBankAccount(user.uid, deleteId);
+      await deleteBankAccount(companyUid, deleteId);
       toast.success('Conta excluída!');
       setDeleteId(null);
       refresh();
@@ -113,7 +113,7 @@ export default function ContasBancariasPage() {
   };
 
   const handleTransfer = async () => {
-    if (!user || !transferFrom || !transferTo || !transferAmount) return;
+    if (!companyUid || !transferFrom || !transferTo || !transferAmount) return;
     if (transferFrom === transferTo) {
       toast.error('Selecione contas diferentes.');
       return;
@@ -121,7 +121,7 @@ export default function ContasBancariasPage() {
     setTransferring(true);
     try {
       await transferBetweenAccounts(
-        user.uid,
+        companyUid,
         transferFrom,
         transferTo,
         parseFloat(transferAmount),

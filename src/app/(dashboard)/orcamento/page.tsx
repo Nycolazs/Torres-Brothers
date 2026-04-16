@@ -45,7 +45,7 @@ import { startOfMonth, endOfMonth, format, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function OrcamentoPage() {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const { categories } = useCategories();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [actuals, setActuals] = useState<Record<string, number>>({});
@@ -66,11 +66,16 @@ export default function OrcamentoPage() {
   );
 
   const fetchBudgets = useCallback(async () => {
-    if (!user) return;
+    if (!companyUid) {
+      setBudgets([]);
+      setActuals({});
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const q = query(
-        budgetsCol(user.uid),
+        budgetsCol(companyUid),
         where('month', '==', selectedMonth),
         where('year', '==', selectedYear)
       );
@@ -81,7 +86,7 @@ export default function OrcamentoPage() {
       // Get actual spending
       const start = startOfMonth(new Date(selectedYear, selectedMonth - 1));
       const end = endOfMonth(start);
-      const transactions = await getTransactionsByDateRange(user.uid, start, end);
+      const transactions = await getTransactionsByDateRange(companyUid, start, end);
       const totals: Record<string, number> = {};
       for (const t of transactions) {
         if (t.status === 'cancelled' || t.type === 'income') continue;
@@ -93,7 +98,7 @@ export default function OrcamentoPage() {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedMonth, selectedYear, budgetsCol]);
+  }, [companyUid, selectedMonth, selectedYear, budgetsCol]);
 
   useEffect(() => {
     fetchBudgets();
@@ -105,9 +110,9 @@ export default function OrcamentoPage() {
   const availableCategories = expenseCategories.filter((c) => !budgetedCategoryIds.has(c.id));
 
   const handleAdd = async () => {
-    if (!user || !formCategoryId || !formAmount) return;
+    if (!companyUid || !formCategoryId || !formAmount) return;
     try {
-      await addDoc(budgetsCol(user.uid), {
+      await addDoc(budgetsCol(companyUid), {
         categoryId: formCategoryId,
         month: selectedMonth,
         year: selectedYear,
@@ -115,7 +120,7 @@ export default function OrcamentoPage() {
         actualAmount: 0,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
-        uid: user.uid,
+        uid: companyUid,
       });
       toast.success('Orçamento adicionado!');
       setModalOpen(false);
@@ -128,9 +133,9 @@ export default function OrcamentoPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!user) return;
+    if (!companyUid) return;
     try {
-      await deleteDoc(doc(db, 'users', user.uid, 'budgets', id));
+      await deleteDoc(doc(db, 'users', companyUid, 'budgets', id));
       toast.success('Orçamento removido!');
       fetchBudgets();
     } catch {

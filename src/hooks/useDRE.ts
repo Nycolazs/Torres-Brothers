@@ -31,14 +31,14 @@ function sumByCategories(
 }
 
 export function useDRE(startDate: Date, endDate: Date) {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const [report, setReport] = useState<DREReport | null>(null);
   const [loading, setLoading] = useState(true);
   const startDateMs = startDate.getTime();
   const endDateMs = endDate.getTime();
 
   useEffect(() => {
-    if (!user) {
+    if (!companyUid) {
       setReport(null);
       setLoading(false);
       return;
@@ -51,8 +51,8 @@ export function useDRE(startDate: Date, endDate: Date) {
         const end = new Date(endDateMs);
 
         const [transactions, categories] = await Promise.all([
-          getTransactionsByDateRange(user.uid, start, end),
-          getCategories(user.uid),
+          getTransactionsByDateRange(companyUid, start, end),
+          getCategories(companyUid),
         ]);
 
         const activeTransactions = transactions.filter((t) => t.status !== 'cancelled');
@@ -122,7 +122,7 @@ export function useDRE(startDate: Date, endDate: Date) {
     };
 
     fetchDRE();
-  }, [user, startDateMs, endDateMs]);
+  }, [companyUid, startDateMs, endDateMs]);
 
   return { report, loading };
 }

@@ -43,7 +43,7 @@ const TYPE_COLORS: Record<TransactionType, string> = {
 };
 
 export default function CategoriasPage() {
-  const { user } = useAuth();
+  const { companyUid } = useAuth();
   const { categories, loading, refresh } = useCategories();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -67,13 +67,13 @@ export default function CategoriasPage() {
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!user) return;
+    if (!companyUid) return;
     try {
       if (editingCategory) {
-        await updateCategory(user.uid, editingCategory.id, data);
+        await updateCategory(companyUid, editingCategory.id, data);
         toast.success('Categoria atualizada!');
       } else {
-        await createCategory(user.uid, data);
+        await createCategory(companyUid, data);
         toast.success('Categoria criada!');
       }
       setModalOpen(false);
@@ -84,9 +84,9 @@ export default function CategoriasPage() {
   };
 
   const handleDelete = async () => {
-    if (!user || !deleteId) return;
+    if (!companyUid || !deleteId) return;
     try {
-      await deleteCategory(user.uid, deleteId);
+      await deleteCategory(companyUid, deleteId);
       toast.success('Categoria excluída!');
       setDeleteId(null);
       refresh();
