@@ -21,6 +21,12 @@ function profileRef(uid: string) {
   return doc(db, 'users', uid, 'profile', 'main');
 }
 
+function omitUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as Partial<T>;
+}
+
 function inferNameFromEmail(email: string): string {
   const localPart = email.split('@')[0] || 'usuario';
   return localPart
@@ -145,9 +151,14 @@ export async function ensureUserProfile(
     existingProfile,
     preferredName
   );
+  const isAdmin = systemConfig.adminUid === firebaseUser.uid;
 
-  if (shouldSyncProfile(existingProfile, profile)) {
-    await setDoc(ref, profile, { merge: true });
+  if (!snapshot.exists()) {
+    await setDoc(ref, omitUndefined(profile), { merge: true });
+  } else if (shouldSyncProfile(existingProfile, profile)) {
+    if (isAdmin) {
+      await setDoc(ref, omitUndefined(profile), { merge: true });
+    }
   }
 
   return {
