@@ -14,19 +14,33 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-const app: FirebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-
-const db: Firestore = getFirestore(app);
-const auth: Auth = getAuth(app);
-const storage: FirebaseStorage = getStorage(app);
-
+let app: FirebaseApp;
+let db: Firestore;
+let auth: Auth;
+let storage: FirebaseStorage;
 let analytics: Analytics | null = null;
-if (typeof window !== 'undefined') {
-  isSupported().then((supported) => {
-    if (supported) {
-      analytics = getAnalytics(app);
-    }
-  });
+
+try {
+  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+  storage = getStorage(app);
+
+  if (typeof window !== 'undefined') {
+    isSupported().then((supported) => {
+      if (supported) {
+        analytics = getAnalytics(app);
+      }
+    });
+  }
+} catch (e) {
+  // Firebase not configured — auth/dashboard features won't work,
+  // but the public landing page will load normally.
+  console.warn('[Firebase] Initialization failed — running without Firebase:', (e as Error).message);
+  app = undefined as unknown as FirebaseApp;
+  db = undefined as unknown as Firestore;
+  auth = undefined as unknown as Auth;
+  storage = undefined as unknown as FirebaseStorage;
 }
 
 export { app, db, auth, storage, analytics };

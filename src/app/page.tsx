@@ -130,14 +130,14 @@ export default function HomePage() {
                 </div>
                 <div>
                   <p
-                    className="text-[1.7rem] font-bold uppercase leading-[1.1] tracking-wide text-[#f3e6cb]"
+                    className="text-[1.3rem] font-bold uppercase leading-[1.1] tracking-wide text-[#f3e6cb] sm:text-[1.7rem]"
                     style={{ fontFamily: 'var(--font-amiri)' }}
                   >
                     Torres Brothers
                   </p>
                   <div className="mt-0.5 flex items-center gap-2">
                     <div style={{ width: 16, height: 1, backgroundColor: '#c8a96e' }} />
-                    <span className="text-[0.62rem] uppercase tracking-[0.30em] text-[#c8a96e]">
+                    <span className="text-[0.6rem] uppercase tracking-[0.22em] text-[#c8a96e] sm:text-[0.62rem] sm:tracking-[0.30em]">
                       A arte de transformar e preservar espaços
                     </span>
                   </div>
@@ -165,7 +165,7 @@ export default function HomePage() {
 
               <motion.h1
                 variants={fadeUp} custom={0.28} initial="hidden" animate="visible"
-                className="text-[clamp(2.4rem,6.5vw,5.2rem)] leading-[1.06] text-[#f9f4ea]"
+                className="text-[clamp(1.85rem,6.5vw,5.2rem)] leading-[1.06] text-[#f9f4ea]"
                 style={{ fontFamily: 'var(--font-amiri)' }}
               >
                 Sua empresa com aparência impecável e brilho premium.
@@ -195,7 +195,7 @@ export default function HomePage() {
               >
                 <Link
                   href={WHATSAPP} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#c8a96e] px-7 py-3.5 text-sm font-semibold text-[#0b2416] shadow-[0_0_32px_rgba(200,169,110,0.40)] transition hover:scale-[1.03] active:scale-100"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#c8a96e] px-7 py-4 text-sm font-semibold text-[#0b2416] shadow-[0_0_32px_rgba(200,169,110,0.40)] transition hover:scale-[1.03] active:scale-100 sm:w-auto sm:py-3.5"
                   style={{ fontFamily: 'var(--font-dm-sans)' }}
                 >
                   <MessageCircle className="h-4 w-4" />
@@ -203,7 +203,7 @@ export default function HomePage() {
                 </Link>
                 <button
                   onClick={() => scrollTo(1)}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#c8a96e]/50 bg-white/5 px-7 py-3.5 text-sm font-semibold text-[#f8f3e8] backdrop-blur-sm transition hover:border-[#c8a96e] hover:bg-white/8"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#c8a96e]/50 bg-white/5 px-7 py-4 text-sm font-semibold text-[#f8f3e8] backdrop-blur-sm transition hover:border-[#c8a96e] hover:bg-white/8 sm:w-auto sm:py-3.5"
                   style={{ fontFamily: 'var(--font-dm-sans)' }}
                 >
                   Ver serviços
@@ -219,7 +219,7 @@ export default function HomePage() {
         ════════════════════════════ */}
         <section
           data-slide="1"
-          className={`${sBase} items-center justify-center`}
+          className="relative flex min-h-screen snap-start flex-col items-center justify-center"
           style={{ backgroundColor: '#071610' }}
         >
           {/* Textura radial */}
@@ -228,14 +228,14 @@ export default function HomePage() {
             style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(200,169,110,0.07) 0%, transparent 55%)' }}
           />
 
-          <div className="relative z-10 mx-auto w-full max-w-7xl px-6 py-16 sm:px-12 lg:px-20">
+          <div className="relative z-10 mx-auto w-full max-w-7xl px-6 py-10 sm:px-12 md:py-16 lg:px-20">
             <motion.div
               variants={fadeUp} custom={0} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }}
-              className="mb-10 text-center"
+              className="mb-7 text-center md:mb-10"
             >
               <p className="text-[0.7rem] uppercase tracking-[0.28em] text-[#c8a96e]">O que fazemos</p>
               <h2
-                className="mt-2 text-[clamp(2rem,4.5vw,3.6rem)] leading-tight text-[#f8f3e8]"
+                className="mt-2 text-[clamp(1.75rem,4.5vw,3.6rem)] leading-tight text-[#f8f3e8]"
                 style={{ fontFamily: 'var(--font-amiri)' }}
               >
                 Serviços Torres Brothers
@@ -245,17 +245,18 @@ export default function HomePage() {
               </div>
             </motion.div>
 
-            <div className="grid gap-5 md:grid-cols-3">
+            {/* Mobile: horizontal scroll carousel. Desktop: 3-col grid */}
+            <div className="no-scrollbar -mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 sm:-mx-12 sm:px-12 md:mx-0 md:grid md:grid-cols-3 md:gap-5 md:snap-none md:overflow-visible md:px-0 md:pb-0">
               {SERVICES.map((s, i) => (
                 <motion.article
                   key={s.num}
-                  variants={fadeUp} custom={i * 0.1} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
-                  className="group flex flex-col overflow-hidden rounded-2xl transition duration-300 hover:-translate-y-2"
+                  variants={fadeUp} custom={i * 0.1} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.15 }}
+                  className="group flex w-[80vw] shrink-0 snap-center flex-col overflow-hidden rounded-2xl transition duration-300 hover:-translate-y-2 sm:w-[62vw] md:w-auto md:shrink"
                   style={{ border: '1px solid rgba(200,169,110,0.25)', backgroundColor: '#0c2b1e' }}
                 >
                   {/* Imagem */}
                   <div
-                    className="h-52 origin-center transition duration-500 group-hover:scale-105"
+                    className="h-44 origin-center transition duration-500 group-hover:scale-105 md:h-52"
                     style={{
                       backgroundImage: `linear-gradient(180deg, rgba(7,22,16,0.05) 0%, rgba(7,22,16,0.65) 100%), url('${s.image}')`,
                       backgroundSize: 'cover',
@@ -263,7 +264,7 @@ export default function HomePage() {
                     }}
                   />
                   {/* Texto */}
-                  <div className="flex flex-1 flex-col p-6">
+                  <div className="flex flex-1 flex-col p-5 md:p-6">
                     <div className="mb-3 flex items-center gap-3">
                       <span
                         className="text-4xl leading-none text-[#c8a96e]/40"
@@ -274,7 +275,7 @@ export default function HomePage() {
                       <div style={{ flex: 1, height: 1, backgroundColor: 'rgba(200,169,110,0.25)' }} />
                     </div>
                     <h3
-                      className="text-[1.5rem] leading-snug text-[#f8f3e8]"
+                      className="text-[1.4rem] leading-snug text-[#f8f3e8] md:text-[1.5rem]"
                       style={{ fontFamily: 'var(--font-amiri)' }}
                     >
                       {s.title}
@@ -296,6 +297,11 @@ export default function HomePage() {
                 </motion.article>
               ))}
             </div>
+
+            {/* Mobile swipe hint */}
+            <p className="mt-3 text-center text-[0.65rem] uppercase tracking-[0.18em] text-[#c8a96e]/50 md:hidden">
+              deslize para ver mais
+            </p>
           </div>
         </section>
 
@@ -311,7 +317,13 @@ export default function HomePage() {
             backgroundPosition: 'center right',
           }}
         >
-          <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-14 px-6 py-16 sm:px-12 lg:grid-cols-2 lg:px-20">
+          {/* Mobile overlay: full dark cover so text is legible on small screens */}
+          <div
+            className="pointer-events-none absolute inset-0 lg:hidden"
+            style={{ background: 'rgba(6,14,10,0.72)' }}
+          />
+
+          <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-10 px-6 py-10 sm:px-12 lg:gap-14 lg:grid-cols-2 lg:py-16 lg:px-20">
 
             <motion.div
               variants={fadeUp} custom={0} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.25 }}
@@ -352,7 +364,7 @@ export default function HomePage() {
               <div className="mt-9">
                 <Link
                   href={WHATSAPP} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#c8a96e] px-7 py-3.5 text-sm font-semibold text-[#0b2416] shadow-[0_0_28px_rgba(200,169,110,0.35)] transition hover:scale-[1.03]"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#c8a96e] px-7 py-4 text-sm font-semibold text-[#0b2416] shadow-[0_0_28px_rgba(200,169,110,0.35)] transition hover:scale-[1.03] sm:w-auto sm:py-3.5"
                   style={{ fontFamily: 'var(--font-dm-sans)' }}
                 >
                   <MessageCircle className="h-4 w-4" />
@@ -361,8 +373,8 @@ export default function HomePage() {
               </div>
             </motion.div>
 
-            {/* Coluna direita vazia — a imagem de fundo aparece aqui */}
-            <div />
+            {/* Coluna direita vazia — a imagem de fundo aparece aqui (desktop only) */}
+            <div className="hidden lg:block" />
           </div>
         </section>
 
@@ -384,19 +396,19 @@ export default function HomePage() {
             className="relative z-10 mx-auto w-full max-w-3xl px-6 py-16 text-center sm:px-10"
           >
             {/* Logo + nome centrado */}
-            <div className="mb-10 flex flex-col items-center gap-3">
+            <div className="mb-8 flex flex-col items-center gap-3 sm:mb-10">
               <div
-                className="flex h-[72px] w-[72px] items-center justify-center rounded-2xl"
+                className="flex h-[58px] w-[58px] items-center justify-center rounded-2xl sm:h-[72px] sm:w-[72px]"
                 style={{
                   border: '1.5px solid rgba(200,169,110,0.55)',
                   background: 'rgba(10,32,22,0.80)',
                   boxShadow: '0 0 36px rgba(200,169,110,0.24), inset 0 1px 0 rgba(200,169,110,0.14)',
                 }}
               >
-                <Image src="/logo.png" alt="Torres Brothers" width={48} height={48} className="h-12 w-12 object-contain" />
+                <Image src="/logo.png" alt="Torres Brothers" width={40} height={40} className="h-10 w-10 object-contain sm:h-12 sm:w-12" />
               </div>
               <p
-                className="text-[2.1rem] font-bold uppercase leading-none tracking-wide text-[#f3e6cb]"
+                className="text-[1.75rem] font-bold uppercase leading-none tracking-wide text-[#f3e6cb] sm:text-[2.1rem]"
                 style={{ fontFamily: 'var(--font-amiri)' }}
               >
                 Torres Brothers
@@ -421,7 +433,7 @@ export default function HomePage() {
             <div className="mt-9">
               <Link
                 href={WHATSAPP} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#c8a96e] px-9 py-4 text-base font-semibold text-[#0b2416] shadow-[0_0_40px_rgba(200,169,110,0.45)] transition hover:scale-[1.04] active:scale-100"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#c8a96e] px-9 py-4 text-base font-semibold text-[#0b2416] shadow-[0_0_40px_rgba(200,169,110,0.45)] transition hover:scale-[1.04] active:scale-100 sm:w-auto"
                 style={{ fontFamily: 'var(--font-dm-sans)' }}
               >
                 <MessageCircle className="h-5 w-5" />
@@ -481,21 +493,42 @@ export default function HomePage() {
       </div>
 
       {/* ── Setas mobile (canto inferior direito) ── */}
-      <div className="pointer-events-none fixed bottom-4 right-4 z-40 flex items-center gap-2 md:hidden">
+      <div className="pointer-events-none fixed bottom-5 right-4 z-40 flex items-center gap-2 md:hidden">
         <button
           onClick={() => scrollTo(idx - 1)}
-          className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur"
+          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/60 text-white/80 backdrop-blur transition active:scale-90 hover:border-[#c8a96e]/70 hover:text-[#c8a96e]"
           aria-label="Slide anterior"
         >
-          <ArrowUp className="h-3.5 w-3.5" />
+          <ArrowUp className="h-4 w-4" />
         </button>
         <button
           onClick={() => scrollTo(idx + 1)}
-          className="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur"
+          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/60 text-white/80 backdrop-blur transition active:scale-90 hover:border-[#c8a96e]/70 hover:text-[#c8a96e]"
           aria-label="Próximo slide"
         >
-          <ArrowDown className="h-3.5 w-3.5" />
+          <ArrowDown className="h-4 w-4" />
         </button>
+      </div>
+
+      {/* ── Dots mobile (centro inferior) ── */}
+      <div className="pointer-events-none fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 md:hidden">
+        {Array.from({ length: TOTAL }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => scrollTo(i)}
+            aria-label={`Slide ${i + 1}`}
+            className="pointer-events-auto transition-all duration-300"
+            style={{
+              width: i === idx ? 20 : 6,
+              height: 6,
+              borderRadius: 9999,
+              backgroundColor: i === idx ? '#c8a96e' : 'rgba(245,240,230,0.28)',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+            }}
+          />
+        ))}
       </div>
 
     </main>

@@ -199,3 +199,12 @@ main:hover .slider-arrow-btn {
 .presentation-scrollbar::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #f0d27a 0%, #d4af37 100%);
 }
+
+/* ─── Hide scrollbar (mobile cards horizontal scroll) ───────── */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
