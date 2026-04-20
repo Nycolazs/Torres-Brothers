@@ -8,7 +8,7 @@ import { ArrowDown, CheckCircle2 } from 'lucide-react';
 
 const WHATSAPP = 'https://wa.me/5541987164811';
 const COMPANY_CNPJ = '66.121.072/0001-03';
-const YACACODE_URL = 'https://yacacode.vercel.app';
+const YACACODE_URL = 'https://yacacode.com';
 
 const MEDIA = {
   hero: '/media/torres-brothers/supermarket-burnisher-machine.jpeg',
