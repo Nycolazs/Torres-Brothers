@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
-import { Plus, Download, Trash2, CheckCircle } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +20,6 @@ import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
 import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { Transaction, TransactionType, TransactionStatus, TransactionFormData, ReportFilters } from '@/types';
-import { getDateRange } from '@/lib/utils';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/constants';
 import { startOfYear, endOfYear } from 'date-fns';
 
@@ -58,7 +57,6 @@ export default function LancamentosPage() {
     page,
     totalPages,
     nextPage,
-    refresh,
     createTransaction,
     updateTransaction,
     deleteTransaction,

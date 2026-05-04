@@ -33,7 +33,6 @@ import { transactionSchema } from '@/lib/validations';
 import { Transaction, TransactionFormData, TransactionType, Category, BankAccount } from '@/types';
 import {
   TRANSACTION_TYPE_LABELS,
-  TRANSACTION_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
   RECURRENCE_TYPE_LABELS,
 } from '@/constants';

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Topbar } from '@/components/layout/Topbar';
@@ -28,7 +29,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <img src="/logo.png" alt="Torres Brothers" className="h-12 w-auto animate-pulse" />
+          <Image
+            src="/logo.png"
+            alt="Torres Brothers"
+            width={48}
+            height={48}
+            className="h-12 w-auto animate-pulse"
+            priority
+          />
           <div className="h-8 w-8 animate-spin rounded-full border-3 border-primary border-t-transparent" />
         </div>
       </div>

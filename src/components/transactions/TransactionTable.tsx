@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { MoreHorizontal, Edit, Trash2, CheckCircle, ArrowUpDown } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, CheckCircle } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -10,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {

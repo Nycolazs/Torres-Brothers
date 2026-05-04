@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, X, Filter } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +15,6 @@ import { TransactionType, TransactionStatus } from '@/types';
 import {
   TRANSACTION_TYPE_LABELS,
   TRANSACTION_STATUS_LABELS,
-  PAYMENT_METHOD_LABELS,
 } from '@/constants';
 
 interface TransactionFiltersProps {

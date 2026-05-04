@@ -61,7 +61,7 @@ export function ExpenseBreakdownChart({ data }: ExpenseBreakdownChartProps) {
               </Pie>
               <Tooltip content={<CustomTooltip />} />
               <Legend
-                formatter={(value, entry) => {
+                formatter={(value) => {
                   const item = data.find((d) => d.name === value);
                   const pct = item ? ((item.value / total) * 100).toFixed(1) : '0';
                   return (

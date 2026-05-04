@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { TransactionStatus, TransactionType } from '@/types';
-import { TRANSACTION_STATUS_LABELS, STATUS_COLORS, TRANSACTION_TYPE_LABELS, TRANSACTION_TYPE_COLORS } from '@/constants';
+import { TRANSACTION_STATUS_LABELS, STATUS_COLORS, TRANSACTION_TYPE_LABELS } from '@/constants';
 
 interface StatusBadgeProps {
   status: TransactionStatus;

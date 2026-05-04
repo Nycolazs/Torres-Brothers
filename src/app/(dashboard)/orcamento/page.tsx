@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -26,14 +26,13 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { useCategories } from '@/hooks/useCategories';
-import { Budget, Category } from '@/types';
+import { Budget } from '@/types';
 import { cn, formatCurrency } from '@/lib/utils';
 import { getTransactionsByDateRange } from '@/services/transactionService';
 import {
   collection,
   getDocs,
   addDoc,
-  updateDoc,
   deleteDoc,
   doc,
   query,
@@ -52,9 +51,8 @@ export default function OrcamentoPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const now = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   // Form state
   const [formCategoryId, setFormCategoryId] = useState('');
@@ -144,6 +142,7 @@ export default function OrcamentoPage() {
   };
 
   const monthOptions = useMemo(() => {
+    const now = new Date();
     const options = [];
     for (let i = -3; i <= 12; i++) {
       const d = subMonths(now, -i);

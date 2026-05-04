@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { ArrowDown, CheckCircle2 } from 'lucide-react';
 
 const WHATSAPP = 'https://wa.me/5541987164811';
-const COMPANY_CNPJ = '66.121.072/0001-03';
 const YACACODE_URL = 'https://yacacode.com';
 
 const MEDIA = {
@@ -63,22 +62,22 @@ const PROOF_CARDS = [
     src: MEDIA.proofSplit,
     alt: 'Comparativo visual entre piso sem polimento e piso com polimento.',
     eyebrow: 'comparativo real',
-    title: 'Superficie com e sem polimento.',
+    title: 'Superfície com e sem polimento.',
     chip: 'Antes e depois',
   },
   {
     src: MEDIA.proofLabeled,
-    alt: 'Placa comparando superficie nao polida e superficie polida.',
+    alt: 'Placa comparando superfície não polida e superfície polida.',
     eyebrow: 'leitura do acabamento',
-    title: 'Evolucao visivel do brilho.',
+    title: 'Evolução visível do brilho.',
     chip: 'Detalhe do brilho',
   },
   {
     src: MEDIA.proofLobby,
-    alt: 'Lavadora automatica trabalhando em area interna com piso brilhante.',
-    eyebrow: 'operacao em ambiente interno',
+    alt: 'Lavadora automática trabalhando em área interna com piso brilhante.',
+    eyebrow: 'operação em ambiente interno',
     title: 'Limpeza mecanizada em alto fluxo.',
-    chip: 'Operacao real',
+    chip: 'Operação real',
   },
 ] as const;
 
@@ -250,7 +249,7 @@ export default function HomePage() {
                   <div className="mt-0.5 flex items-center gap-2">
                     <div style={{ width: 16, height: 1, backgroundColor: '#c8a96e' }} />
                     <span className="text-[0.62rem] uppercase tracking-[0.3em] text-[#c8a96e]">
-                      Limpeza e revitalizacao de pisos
+                      Limpeza e revitalização de pisos
                     </span>
                   </div>
                 </div>
@@ -303,7 +302,7 @@ export default function HomePage() {
                 <div className="mt-1 flex items-center justify-center gap-2">
                   <div style={{ width: 16, height: 1, backgroundColor: '#c8a96e' }} />
                   <span className="text-[0.72rem] uppercase tracking-[0.2em] text-[#c8a96e] sm:text-[0.76rem] sm:tracking-[0.24em]">
-                    Limpeza e revitalizacao de pisos
+                    Limpeza e revitalização de pisos
                   </span>
                 </div>
               </div>
@@ -351,9 +350,9 @@ export default function HomePage() {
                 className="max-w-2xl text-base leading-relaxed text-[#d8ece4]/88 sm:text-lg"
                 style={{ fontFamily: 'var(--font-dm-sans)' }}
               >
-                A Torres Brothers atua em espacos comerciais, corporativos e de alto fluxo com
-                processo mecanizado, leitura técnica da superficie e acabamento pensado para o uso
-                real de cada area.
+                A Torres Brothers atua em espaços comerciais, corporativos e de alto fluxo com
+                processo mecanizado, leitura técnica da superfície e acabamento pensado para o uso
+                real de cada área.
               </motion.p>
 
               <motion.div
@@ -430,14 +429,14 @@ export default function HomePage() {
                 className="mt-2 text-[clamp(1.9rem,4.6vw,3.8rem)] leading-tight text-[#f8f3e8]"
                 style={{ fontFamily: 'var(--font-amiri)' }}
               >
-                Servico certo para cada piso, com imagem real de resultado.
+                Serviço certo para cada piso, com imagem real de resultado.
               </h2>
               <p
                 className="mt-4 max-w-2xl text-base leading-relaxed text-[#b6d4c4]/88"
                 style={{ fontFamily: 'var(--font-dm-sans)' }}
               >
-                O foco nao e apenas limpar. E entregar um piso que suporte a rotina, comunique
-                cuidado e mantenha boa apresentacao em ambientes de trabalho, venda ou circulacao
+                O foco não é apenas limpar. É entregar um piso que suporte a rotina, comunique
+                cuidado e mantenha boa apresentação em ambientes de trabalho, venda ou circulação
                 intensa.
               </p>
             </motion.div>
@@ -496,7 +495,7 @@ export default function HomePage() {
                       className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-[#c8a96e] transition-all hover:gap-3"
                       style={{ fontFamily: 'var(--font-dm-sans)' }}
                     >
-                      Solicitar avaliacao
+                      Solicitar avaliação
                       <ArrowDown className="h-3.5 w-3.5 rotate-[-90deg]" />
                     </Link>
                   </div>
@@ -537,7 +536,7 @@ export default function HomePage() {
                   className="text-[clamp(1.85rem,4.2vw,3.55rem)] leading-tight text-[#f8f3e8]"
                   style={{ fontFamily: 'var(--font-amiri)' }}
                 >
-                  Antes, durante e depois com processo tecnico de verdade.
+                  Antes, durante e depois com processo técnico de verdade.
                 </h2>
 
                 <div className="my-5" style={{ width: 52, height: 1.5, backgroundColor: '#c8a96e', borderRadius: 1 }} />
@@ -546,8 +545,8 @@ export default function HomePage() {
                   className="max-w-xl text-base leading-relaxed text-[#b8d5c4]/90"
                   style={{ fontFamily: 'var(--font-dm-sans)' }}
                 >
-                  Cada atendimento combina analise da superficie, escolha correta do equipamento e
-                  acabamento pensado para o uso diario do ambiente.
+                  Cada atendimento combina análise da superfície, escolha correta do equipamento e
+                  acabamento pensado para o uso diário do ambiente.
                 </p>
 
                 <ul className="mt-5 space-y-3">
@@ -687,7 +686,7 @@ export default function HomePage() {
                         className="mt-1 text-lg leading-tight text-[#f8f3e8]"
                         style={{ fontFamily: 'var(--font-amiri)' }}
                       >
-                        Superficie com e sem polimento.
+                        Superfície com e sem polimento.
                       </p>
                     </div>
                   </div>
@@ -699,7 +698,7 @@ export default function HomePage() {
                   >
                     <Image
                       src={MEDIA.proofLabeled}
-                      alt="Placa comparando superficie nao polida e superficie polida."
+                      alt="Placa comparando superfície não polida e superfície polida."
                       fill
                       sizes="26vw"
                       className="object-cover object-bottom"
@@ -719,7 +718,7 @@ export default function HomePage() {
                         className="mt-1 text-lg leading-tight text-[#f8f3e8]"
                         style={{ fontFamily: 'var(--font-amiri)' }}
                       >
-                        Evolucao visivel do brilho.
+                        Evolução visível do brilho.
                       </p>
                     </div>
                   </div>
@@ -731,7 +730,7 @@ export default function HomePage() {
                   >
                     <Image
                       src={MEDIA.proofLobby}
-                      alt="Lavadora automatica trabalhando em area interna com piso brilhante."
+                      alt="Lavadora automática trabalhando em área interna com piso brilhante."
                       fill
                       sizes="26vw"
                       className="object-cover"
@@ -745,7 +744,7 @@ export default function HomePage() {
                         className="text-[0.68rem] uppercase tracking-[0.18em] text-[#dcbf86]"
                         style={{ fontFamily: 'var(--font-dm-sans)' }}
                       >
-                        operacao em ambiente interno
+                        operação em ambiente interno
                       </p>
                       <p
                         className="mt-1 text-lg leading-tight text-[#f8f3e8]"
@@ -827,19 +826,19 @@ export default function HomePage() {
                 className="mx-auto mt-2 max-w-2xl text-[clamp(1.85rem,4vw,3.15rem)] leading-tight text-[#f9f2e4] lg:mx-0"
                 style={{ fontFamily: 'var(--font-amiri)' }}
               >
-                Seu piso pode comunicar mais cuidado, mais limpeza e mais padrao logo na entrada.
+                Seu piso pode comunicar mais cuidado, mais limpeza e mais padrão logo na entrada.
               </h2>
 
               <p
                 className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-[#c2ddd0]/90 sm:text-base lg:mx-0"
                 style={{ fontFamily: 'var(--font-dm-sans)' }}
               >
-                Chame no WhatsApp para avaliar o melhor tratamento para o ambiente. A recomendacao
-                leva em conta o tipo de piso, o desgaste atual e a rotina da area.
+                Chame no WhatsApp para avaliar o melhor tratamento para o ambiente. A recomendação
+                leva em conta o tipo de piso, o desgaste atual e a rotina da área.
               </p>
 
               <div className="mt-5 hidden flex-wrap justify-center gap-2 xl:flex xl:justify-start" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                {['Comercial', 'Corporativo', 'Restaurantes', 'Condominios', 'Galpões'].map((item) => (
+                {['Comercial', 'Corporativo', 'Restaurantes', 'Condomínios', 'Galpões'].map((item) => (
                   <span
                     key={item}
                     className="border border-white/14 bg-black/16 px-3 py-1.5 text-[0.7rem] uppercase tracking-[0.16em] text-[#eef6f1]"
@@ -872,7 +871,7 @@ export default function HomePage() {
                 <div className="relative aspect-[16/8.5] sm:aspect-[16/7]">
                   <Image
                     src={MEDIA.cta}
-                    alt="Limpeza mecanizada em area interna com acabamento uniforme."
+                    alt="Limpeza mecanizada em área interna com acabamento uniforme."
                     fill
                     sizes="(max-width: 640px) 100vw, 52vw"
                     className="object-cover object-[center_25%]"
@@ -943,12 +942,6 @@ export default function HomePage() {
                     style={{ fontFamily: 'var(--font-dm-sans)' }}
                   >
                     Torres Brothers
-                  </p>
-                  <p
-                    className="text-sm text-[#d6e7df]/88"
-                    style={{ fontFamily: 'var(--font-dm-sans)' }}
-                  >
-                    CNPJ {COMPANY_CNPJ}
                   </p>
                   <p
                     className="text-sm text-[#8fb3a3]"

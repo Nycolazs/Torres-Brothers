@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { getTransactionsByDateRange } from '@/services/transactionService';
-import { ChartDataPoint, Transaction } from '@/types';
+import { ChartDataPoint } from '@/types';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -33,7 +33,6 @@ export function useCashFlowChart(months: number = 6) {
         for (let i = 0; i < months; i++) {
           const monthDate = subMonths(now, months - 1 - i);
           const key = format(monthDate, 'yyyy-MM');
-          const label = format(monthDate, 'MMM/yy', { locale: ptBR });
           monthlyData[key] = { receitas: 0, custos: 0, despesas: 0 };
         }
 
