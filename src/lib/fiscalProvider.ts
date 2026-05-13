@@ -38,7 +38,7 @@ function getFocusAuthHeader() {
 }
 
 function getNfeioBaseUrl() {
-  return process.env.NFEIO_BASE_URL || 'https://api.nfe.io/v2';
+  return process.env.NFEIO_BASE_URL || 'https://api.nfe.io/v1';
 }
 
 function getNfeioApiKey() {
@@ -175,6 +175,7 @@ export async function issueFiscalInvoice(input: IssueInput): Promise<FiscalProvi
         method: 'POST',
         headers: {
           Authorization: apiKey,
+          'X-NFEIO-APIKEY': apiKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(buildNfeioPayload(input.reference, input.invoice)),
@@ -264,7 +265,10 @@ export async function consultFiscalInvoice(reference: string): Promise<FiscalPro
     const response = await fetch(
       `${getNfeioBaseUrl()}/companies/${encodeURIComponent(companyId)}/serviceinvoices/external/${encodeURIComponent(reference)}`,
       {
-        headers: { Authorization: apiKey },
+        headers: {
+          Authorization: apiKey,
+          'X-NFEIO-APIKEY': apiKey,
+        },
       }
     );
     const raw = (await response.json().catch(() => ({}))) as Record<string, unknown>;
