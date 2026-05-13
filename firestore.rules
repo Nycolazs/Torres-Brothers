@@ -128,6 +128,10 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
     }
 
+    match /users/{userId}/fiscalInvoices/{document=**} {
+      allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

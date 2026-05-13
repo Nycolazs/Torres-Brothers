@@ -11,6 +11,7 @@ import {
   ArrowDownCircle,
   Wallet,
   BarChart3,
+  FileCheck2,
   FileText,
   Tag,
   Landmark,
@@ -31,6 +32,7 @@ const mainNavItems = [
   { href: '/contas-receber', label: 'Contas a Receber', icon: ArrowDownCircle, hint: 'Acompanhe recebimentos e inadimplência' },
   { href: '/fluxo-caixa', label: 'Fluxo de Caixa', icon: Wallet, hint: 'Entradas e saídas no período' },
   { href: '/dre', label: 'DRE', icon: BarChart3, hint: 'Resultado do exercício por período' },
+  { href: '/notas-fiscais', label: 'Notas Fiscais', icon: FileCheck2, hint: 'Emita e acompanhe NFS-e' },
   { href: '/relatorios', label: 'Relatórios', icon: FileText, hint: 'Exporte informações em PDF e Excel' },
   { href: '/ajuda', label: 'Ajuda', icon: CircleHelp, hint: 'Guia rápido de uso do sistema' },
 ];

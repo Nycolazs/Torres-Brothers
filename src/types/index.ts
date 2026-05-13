@@ -238,6 +238,74 @@ export interface ChartDataPoint {
   resultado: number;
 }
 
+// ── Fiscal Invoices (NFS-e) ───────────────────────────────────────
+
+export type FiscalInvoiceStatus =
+  | 'draft'
+  | 'processing'
+  | 'authorized'
+  | 'rejected'
+  | 'cancelled'
+  | 'simulation';
+
+export interface FiscalAddress {
+  street: string;
+  number: string;
+  complement?: string;
+  district: string;
+  cityCode: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+export interface FiscalCustomer {
+  name: string;
+  document: string;
+  email?: string;
+  phone?: string;
+  address: FiscalAddress;
+}
+
+export interface FiscalService {
+  description: string;
+  serviceListItem: string;
+  municipalServiceCode?: string;
+  taxRate: number;
+  issWithheld: boolean;
+  amount: number;
+  deductions?: number;
+}
+
+export interface FiscalInvoice {
+  id: string;
+  reference: string;
+  status: FiscalInvoiceStatus;
+  provider: 'focus' | 'nfeio' | 'mock';
+  environment: 'homologation' | 'production';
+  providerInvoiceId?: string;
+  transactionId?: string;
+  customer: FiscalCustomer;
+  service: FiscalService;
+  issuedAt?: Timestamp;
+  providerStatus?: string;
+  providerMessage?: string;
+  invoiceNumber?: string;
+  verificationCode?: string;
+  pdfUrl?: string;
+  xmlUrl?: string;
+  rawResponse?: Record<string, unknown>;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  uid: string;
+}
+
+export interface FiscalInvoiceFormData {
+  transactionId?: string;
+  customer: FiscalCustomer;
+  service: FiscalService;
+}
+
 // ── Pagination ─────────────────────────────────────────────────────
 
 export interface PaginationState {
