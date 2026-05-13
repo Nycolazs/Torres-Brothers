@@ -173,19 +173,16 @@ export async function issueFiscalInvoice(input: IssueInput): Promise<FiscalProvi
       throw new Error('NFEIO_API_KEY e NFEIO_COMPANY_ID precisam estar configurados no servidor.');
     }
 
-    const response = await fetch(
-      `${getNfeioBaseUrl()}/companies/${encodeURIComponent(companyId)}/serviceinvoices?apikey=${encodeURIComponent(apiKey)}`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: apiKey,
-          'X-NFE-APIKEY': apiKey,
-          'X-NFEIO-APIKEY': apiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(buildNfeioPayload(input.reference, input.invoice)),
-      }
-    );
+    const response = await fetch(`${getNfeioBaseUrl()}/companies/${encodeURIComponent(companyId)}/serviceinvoices`, {
+      method: 'POST',
+      headers: {
+        Authorization: apiKey,
+        'X-NFE-APIKEY': apiKey,
+        'X-NFEIO-APIKEY': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(buildNfeioPayload(input.reference, input.invoice)),
+    });
 
     const raw = (await response.json().catch(() => ({}))) as Record<string, unknown>;
 
@@ -268,7 +265,7 @@ export async function consultFiscalInvoice(reference: string): Promise<FiscalPro
     }
 
     const response = await fetch(
-      `${getNfeioBaseUrl()}/companies/${encodeURIComponent(companyId)}/serviceinvoices/${encodeURIComponent(reference)}?apikey=${encodeURIComponent(apiKey)}`,
+      `${getNfeioBaseUrl()}/companies/${encodeURIComponent(companyId)}/serviceinvoices/${encodeURIComponent(reference)}`,
       {
         headers: {
           Authorization: apiKey,
