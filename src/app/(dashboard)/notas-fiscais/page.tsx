@@ -89,8 +89,12 @@ export default function NotasFiscaisPage() {
   useEffect(() => {
     if (!companyUid) return;
 
-    getTransactionsByDateRange(companyUid, new Date(2020, 0, 1), new Date(2030, 11, 31), 'income')
-      .then((data) => setReceivables(data.filter((item) => item.status !== 'cancelled')))
+    getTransactionsByDateRange(companyUid, new Date(2020, 0, 1), new Date(2030, 11, 31))
+      .then((data) =>
+        setReceivables(
+          data.filter((item) => item.type === 'income' && item.status !== 'cancelled')
+        )
+      )
       .catch(() => toast.error('Erro ao carregar recebíveis para nota fiscal.'));
   }, [companyUid]);
 
