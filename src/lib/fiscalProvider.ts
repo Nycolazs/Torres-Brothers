@@ -38,7 +38,7 @@ function getFocusAuthHeader() {
 }
 
 function getNfeioBaseUrl() {
-  return process.env.NFEIO_BASE_URL || 'https://api.nfe.io/v2';
+  return process.env.NFEIO_BASE_URL || 'https://api.nfe.io/v1';
 }
 
 function getNfeioApiKey() {
@@ -50,7 +50,7 @@ function getNfeioCompanyId() {
 }
 
 function mapStatus(raw: Record<string, unknown>): FiscalProviderResult['status'] {
-  const status = String(raw.status || raw.codigo || '').toLowerCase();
+  const status = String(raw.status || raw.flowStatus || raw.codigo || '').toLowerCase();
   if (
     status.includes('autoriz') ||
     status.includes('issued') ||
@@ -115,16 +115,20 @@ function buildFocusPayload(invoice: FiscalInvoiceFormData) {
 }
 
 function buildNfeioPayload(reference: string, invoice: FiscalInvoiceFormData) {
+  const document = onlyDigits(invoice.customer.document);
+  const issRate = invoice.service.taxRate > 1 ? invoice.service.taxRate / 100 : invoice.service.taxRate;
+
   return {
     externalId: reference,
     description: invoice.service.description,
     cityServiceCode: invoice.service.municipalServiceCode || invoice.service.serviceListItem,
-    issRate: invoice.service.taxRate,
+    issRate,
     servicesAmount: invoice.service.amount,
     deductionsAmount: invoice.service.deductions || 0,
-    issHeldByBorrower: invoice.service.issWithheld,
+    issAmountWithheld: invoice.service.issWithheld ? invoice.service.amount * issRate : 0,
     borrower: {
-      federalTaxNumber: onlyDigits(invoice.customer.document),
+      type: document.length === 14 ? 'LegalEntity' : document.length === 11 ? 'NaturalPerson' : 'Undefined',
+      federalTaxNumber: document ? Number(document) : 0,
       name: invoice.customer.name,
       email: invoice.customer.email || undefined,
       phone: invoice.customer.phone ? onlyDigits(invoice.customer.phone) : undefined,
@@ -135,10 +139,10 @@ function buildNfeioPayload(reference: string, invoice: FiscalInvoiceFormData) {
         district: invoice.customer.address.district,
         postalCode: onlyDigits(invoice.customer.address.zipCode),
         state: invoice.customer.address.state,
+        country: 'BRA',
         city: {
           code: invoice.customer.address.cityCode,
           name: invoice.customer.address.city,
-          country: 'BRA',
         },
       },
     },
@@ -154,7 +158,7 @@ function extractInvoiceNumber(raw: Record<string, unknown>) {
 }
 
 function extractVerificationCode(raw: Record<string, unknown>) {
-  return raw.verificationCode || raw.checkCode || raw.codigo_verificacao;
+  return raw.verificationCode || raw.checkCode || raw.batchCheckNumber || raw.codigo_verificacao;
 }
 
 export async function issueFiscalInvoice(input: IssueInput): Promise<FiscalProviderResult> {
@@ -264,7 +268,7 @@ export async function consultFiscalInvoice(reference: string): Promise<FiscalPro
     }
 
     const response = await fetch(
-      `${getNfeioBaseUrl()}/companies/${encodeURIComponent(companyId)}/serviceinvoices/external/${encodeURIComponent(reference)}?apikey=${encodeURIComponent(apiKey)}`,
+      `${getNfeioBaseUrl()}/companies/${encodeURIComponent(companyId)}/serviceinvoices/${encodeURIComponent(reference)}?apikey=${encodeURIComponent(apiKey)}`,
       {
         headers: {
           Authorization: apiKey,
@@ -296,8 +300,8 @@ export async function consultFiscalInvoice(reference: string): Promise<FiscalPro
       providerMessage: String(raw.message || 'Consulta realizada na NFE.io.'),
       invoiceNumber: extractInvoiceNumber(raw) ? String(extractInvoiceNumber(raw)) : undefined,
       verificationCode: extractVerificationCode(raw) ? String(extractVerificationCode(raw)) : undefined,
-      pdfUrl,
-      xmlUrl,
+      pdfUrl: providerInvoiceId ? pdfUrl : undefined,
+      xmlUrl: providerInvoiceId ? xmlUrl : undefined,
       rawResponse: raw,
     };
   }

@@ -84,7 +84,8 @@ export function useFiscalInvoices() {
       if (!companyUid) return;
       try {
         const headers = await getAuthorizationHeader();
-        const response = await fetch(`/api/fiscal/nfse?reference=${encodeURIComponent(invoice.reference)}`, {
+        const lookupId = invoice.providerInvoiceId || invoice.reference;
+        const response = await fetch(`/api/fiscal/nfse?reference=${encodeURIComponent(lookupId)}`, {
           headers,
         });
         const result = await response.json();
