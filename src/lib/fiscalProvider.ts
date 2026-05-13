@@ -38,11 +38,11 @@ function getFocusAuthHeader() {
 }
 
 function getNfeioBaseUrl() {
-  return process.env.NFEIO_BASE_URL || 'https://api.nfe.io/v1';
+  return process.env.NFEIO_BASE_URL || 'https://api.nfe.io/v2';
 }
 
 function getNfeioApiKey() {
-  return process.env.NFEIO_API_KEY || process.env.NFEIO_INVOICE_KEY || null;
+  return process.env.NFEIO_INVOICE_KEY || process.env.NFEIO_API_KEY || null;
 }
 
 function getNfeioCompanyId() {
@@ -175,6 +175,7 @@ export async function issueFiscalInvoice(input: IssueInput): Promise<FiscalProvi
         method: 'POST',
         headers: {
           Authorization: apiKey,
+          'X-NFE-APIKEY': apiKey,
           'X-NFEIO-APIKEY': apiKey,
           'Content-Type': 'application/json',
         },
@@ -267,6 +268,7 @@ export async function consultFiscalInvoice(reference: string): Promise<FiscalPro
       {
         headers: {
           Authorization: apiKey,
+          'X-NFE-APIKEY': apiKey,
           'X-NFEIO-APIKEY': apiKey,
         },
       }
