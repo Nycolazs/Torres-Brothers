@@ -42,11 +42,11 @@ function getNfeioBaseUrl() {
 }
 
 function getNfeioApiKey() {
-  return process.env.NFEIO_INVOICE_KEY || process.env.NFEIO_API_KEY || null;
+  return (process.env.NFEIO_INVOICE_KEY || process.env.NFEIO_API_KEY || '').trim() || null;
 }
 
 function getNfeioCompanyId() {
-  return process.env.NFEIO_COMPANY_ID || null;
+  return process.env.NFEIO_COMPANY_ID?.trim() || null;
 }
 
 function mapStatus(raw: Record<string, unknown>): FiscalProviderResult['status'] {
@@ -170,7 +170,7 @@ export async function issueFiscalInvoice(input: IssueInput): Promise<FiscalProvi
     }
 
     const response = await fetch(
-      `${getNfeioBaseUrl()}/companies/${encodeURIComponent(companyId)}/serviceinvoices`,
+      `${getNfeioBaseUrl()}/companies/${encodeURIComponent(companyId)}/serviceinvoices?apikey=${encodeURIComponent(apiKey)}`,
       {
         method: 'POST',
         headers: {
@@ -264,7 +264,7 @@ export async function consultFiscalInvoice(reference: string): Promise<FiscalPro
     }
 
     const response = await fetch(
-      `${getNfeioBaseUrl()}/companies/${encodeURIComponent(companyId)}/serviceinvoices/external/${encodeURIComponent(reference)}`,
+      `${getNfeioBaseUrl()}/companies/${encodeURIComponent(companyId)}/serviceinvoices/external/${encodeURIComponent(reference)}?apikey=${encodeURIComponent(apiKey)}`,
       {
         headers: {
           Authorization: apiKey,
