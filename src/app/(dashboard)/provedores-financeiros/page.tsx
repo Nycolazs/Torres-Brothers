@@ -42,10 +42,19 @@ const statusLabels: Record<ProviderStatus, string> = {
   production: 'Produção',
 };
 
+const kindLabels: Record<ProviderKind, string> = {
+  manual: 'Manual',
+  mock: 'Mock',
+  pixProvider: 'PIX',
+  boletoProvider: 'Boleto',
+  tefProvider: 'TEF',
+};
+
 export default function ProvedoresFinanceirosPage() {
   const { companyUid, user, isAdmin } = useAuth();
   const [settings, setSettings] = useState<ProviderSetting[] | null>(null);
   const [form, setForm] = useState<ProviderSettingFormData>(initialForm);
+  const [saving, setSaving] = useState(false);
 
   async function load() {
     if (!companyUid || !isAdmin) {
@@ -65,7 +74,9 @@ export default function ProvedoresFinanceirosPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (saving) return;
     if (!companyUid || !isAdmin) return;
+    setSaving(true);
     try {
       await saveProviderSetting(companyUid, form, user?.uid);
       toast.success('Configuração salva.');
@@ -73,6 +84,8 @@ export default function ProvedoresFinanceirosPage() {
       await load();
     } catch {
       toast.error('Erro ao salvar configuração.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -95,7 +108,7 @@ export default function ProvedoresFinanceirosPage() {
               <div className="space-y-2">
                 <Label>Tipo</Label>
                 <Select value={form.kind} onValueChange={(value) => value && setForm({ ...form, kind: value as ProviderKind })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{kindLabels[form.kind]}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="manual">Manual</SelectItem>
                     <SelectItem value="mock">Mock</SelectItem>
@@ -108,7 +121,7 @@ export default function ProvedoresFinanceirosPage() {
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={form.status} onValueChange={(value) => value && setForm({ ...form, status: value as ProviderStatus })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{statusLabels[form.status]}</SelectValue></SelectTrigger>
                   <SelectContent>
                     {Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
                   </SelectContent>
@@ -123,8 +136,8 @@ export default function ProvedoresFinanceirosPage() {
                 <Textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} />
               </div>
               <div className="flex gap-2">
-                <Button type="submit">Salvar</Button>
-                {form.id && <Button type="button" variant="outline" onClick={() => setForm(initialForm)}>Novo</Button>}
+                <Button type="submit" disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+                {form.id && <Button type="button" variant="outline" disabled={saving} onClick={() => setForm(initialForm)}>Novo</Button>}
               </div>
             </form>
           </CardContent>

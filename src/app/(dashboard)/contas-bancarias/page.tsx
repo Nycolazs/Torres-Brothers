@@ -58,7 +58,7 @@ export default function ContasBancariasPage() {
   const selectedTransferFrom = accounts.find((a) => a.id === transferFrom);
   const selectedTransferTo = accounts.find((a) => a.id === transferTo);
 
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(bankAccountSchema),
     defaultValues: { name: '', type: 'checking', initialBalance: 0, color: '#3b82f6' },
   });
@@ -282,8 +282,8 @@ export default function ContasBancariasPage() {
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-              <Button type="submit">{editingAccount ? 'Salvar' : 'Criar'}</Button>
+              <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setModalOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Salvando...' : editingAccount ? 'Salvar' : 'Criar'}</Button>
             </div>
           </form>
         </DialogContent>

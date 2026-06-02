@@ -147,6 +147,7 @@ export interface Contact {
   name: string;
   tradeName?: string;
   document?: string;
+  normalizedDocument?: string;
   email?: string;
   phone?: string;
   mobile?: string;

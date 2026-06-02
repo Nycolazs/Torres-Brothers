@@ -52,6 +52,7 @@ export default function AuditoriaPage() {
 
   const safeLogs = useMemo(() => logs || [], [logs]);
   const entities = useMemo(() => Array.from(new Set(safeLogs.map((log) => log.entity))).sort(), [safeLogs]);
+  const selectedEntityLabel = entityFilter === 'all' ? 'Todas as entidades' : entityFilter;
   const filtered = useMemo(() => {
     const needle = query.toLowerCase().trim();
     return safeLogs.filter((log) => {
@@ -89,7 +90,7 @@ export default function AuditoriaPage() {
             <Input className="pl-9" placeholder="Buscar ação, entidade ou ID" value={query} onChange={(event) => setQuery(event.target.value)} />
           </div>
           <Select value={entityFilter} onValueChange={(value) => value && setEntityFilter(value)}>
-            <SelectTrigger className="md:w-56"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="md:w-56"><SelectValue>{selectedEntityLabel}</SelectValue></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as entidades</SelectItem>
               {entities.map((entity) => <SelectItem key={entity} value={entity}>{entity}</SelectItem>)}

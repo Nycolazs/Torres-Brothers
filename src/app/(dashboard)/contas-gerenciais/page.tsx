@@ -53,6 +53,7 @@ export default function ContasGerenciaisPage() {
   const [accounts, setAccounts] = useState<FinancialAccount[]>([]);
   const [form, setForm] = useState<FinancialAccountFormData>(initialForm);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   async function load() {
     if (!companyUid) return;
@@ -73,11 +74,13 @@ export default function ContasGerenciaisPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (saving) return;
     if (!companyUid) return;
     if (!form.name.trim()) {
       toast.error('Informe o nome da conta gerencial.');
       return;
     }
+    setSaving(true);
     try {
       await saveFinancialAccount(companyUid, form);
       toast.success('Conta gerencial salva.');
@@ -85,6 +88,8 @@ export default function ContasGerenciaisPage() {
       await load();
     } catch {
       toast.error('Erro ao salvar conta gerencial.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -107,7 +112,7 @@ export default function ContasGerenciaisPage() {
               <div className="space-y-2">
                 <Label>Tipo</Label>
                 <Select value={form.type} onValueChange={(value) => value && setForm({ ...form, type: value as TransactionType })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{TRANSACTION_TYPE_LABELS[form.type]}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="income">Receita</SelectItem>
                     <SelectItem value="cost">Custo</SelectItem>
@@ -118,7 +123,7 @@ export default function ContasGerenciaisPage() {
               <div className="space-y-2">
                 <Label>Classificação DRE</Label>
                 <Select value={form.dreClassification} onValueChange={(value) => value && setForm({ ...form, dreClassification: value as DREClassification })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{dreLabels[form.dreClassification]}</SelectValue></SelectTrigger>
                   <SelectContent>
                     {Object.entries(dreLabels).map(([value, label]) => (
                       <SelectItem key={value} value={value}>{label}</SelectItem>
@@ -127,8 +132,8 @@ export default function ContasGerenciaisPage() {
                 </Select>
               </div>
               <div className="flex gap-2">
-                <Button type="submit">{form.id ? 'Salvar alterações' : 'Cadastrar'}</Button>
-                {form.id && <Button type="button" variant="outline" onClick={() => setForm(initialForm)}>Novo</Button>}
+                <Button type="submit" disabled={saving}>{saving ? 'Salvando...' : form.id ? 'Salvar alterações' : 'Cadastrar'}</Button>
+                {form.id && <Button type="button" variant="outline" disabled={saving} onClick={() => setForm(initialForm)}>Novo</Button>}
               </div>
             </form>
           </CardContent>

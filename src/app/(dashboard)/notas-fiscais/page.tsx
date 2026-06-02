@@ -32,7 +32,7 @@ import { useFiscalInvoices } from '@/hooks/useFiscalInvoices';
 import { buildContactSnapshot, listContacts, listServices, saveContact } from '@/services/erpService';
 import { getTransactionsByDateRange } from '@/services/transactionService';
 import { Contact, FiscalInvoiceFormData, FiscalInvoiceStatus, ServiceCatalogItem, Transaction } from '@/types';
-import { cn, formatCurrency, formatDate } from '@/lib/utils';
+import { cn, formatCurrency, formatDate, maskCep, maskCpfCnpj, maskPhone } from '@/lib/utils';
 
 const initialForm: FiscalInvoiceFormData = {
   customer: {
@@ -90,6 +90,7 @@ export default function NotasFiscaisPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('manual');
   const [selectedServiceId, setSelectedServiceId] = useState('manual');
   const [form, setForm] = useState<FiscalInvoiceFormData>(initialForm);
+  const [savingCustomer, setSavingCustomer] = useState(false);
 
   useEffect(() => {
     if (!companyUid) return;
@@ -247,11 +248,13 @@ export default function NotasFiscaisPage() {
   };
 
   const handleSaveCustomer = async () => {
+    if (savingCustomer) return;
     if (!companyUid) return;
     if (!form.customer.name.trim() || !form.customer.document.trim()) {
       toast.error('Informe nome e CPF/CNPJ antes de cadastrar o cliente.');
       return;
     }
+    setSavingCustomer(true);
     try {
       const id = await saveContact(companyUid, {
         type: 'customer',
@@ -273,8 +276,10 @@ export default function NotasFiscaisPage() {
         customerSnapshot: customer ? buildContactSnapshot(customer) : undefined,
       }));
       toast.success('Cliente cadastrado e vinculado à nota.');
-    } catch {
-      toast.error('Erro ao cadastrar cliente.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Erro ao cadastrar cliente.');
+    } finally {
+      setSavingCustomer(false);
     }
   };
 
@@ -367,7 +372,12 @@ export default function NotasFiscaisPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>CPF/CNPJ</Label>
-                  <Input value={form.customer.document} onChange={(e) => patchCustomer('document', e.target.value)} />
+                  <Input
+                    inputMode="numeric"
+                    value={form.customer.document}
+                    onChange={(e) => patchCustomer('document', maskCpfCnpj(e.target.value))}
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>E-mail</Label>
@@ -375,11 +385,16 @@ export default function NotasFiscaisPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Telefone</Label>
-                  <Input value={form.customer.phone} onChange={(e) => patchCustomer('phone', e.target.value)} />
+                  <Input
+                    inputMode="tel"
+                    value={form.customer.phone}
+                    onChange={(e) => patchCustomer('phone', maskPhone(e.target.value))}
+                    placeholder="(00) 00000-0000"
+                  />
                 </div>
               </div>
-              <Button type="button" variant="outline" onClick={handleSaveCustomer}>
-                Salvar tomador como cliente
+              <Button type="button" variant="outline" onClick={handleSaveCustomer} disabled={savingCustomer}>
+                {savingCustomer ? 'Salvando...' : 'Salvar tomador como cliente'}
               </Button>
 
               <div className="grid gap-3 sm:grid-cols-6">
@@ -413,7 +428,12 @@ export default function NotasFiscaisPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>CEP</Label>
-                  <Input value={form.customer.address.zipCode} onChange={(e) => patchAddress('zipCode', e.target.value)} />
+                  <Input
+                    inputMode="numeric"
+                    value={form.customer.address.zipCode}
+                    onChange={(e) => patchAddress('zipCode', maskCep(e.target.value))}
+                    placeholder="00000-000"
+                  />
                 </div>
               </div>
             </CardContent>

@@ -39,6 +39,7 @@ export default function ServicosPage() {
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
   const [form, setForm] = useState<ServiceCatalogFormData>(initialForm);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   async function load() {
     if (!companyUid) return;
@@ -59,11 +60,13 @@ export default function ServicosPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (saving) return;
     if (!companyUid) return;
     if (!form.description.trim()) {
       toast.error('Informe a descrição do serviço.');
       return;
     }
+    setSaving(true);
     try {
       await saveService(companyUid, form);
       toast.success('Serviço salvo com sucesso.');
@@ -71,6 +74,8 @@ export default function ServicosPage() {
       await load();
     } catch {
       toast.error('Erro ao salvar serviço.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -113,8 +118,8 @@ export default function ServicosPage() {
                 ISS retido
               </label>
               <div className="flex gap-2">
-                <Button type="submit">{form.id ? 'Salvar alterações' : 'Cadastrar'}</Button>
-                {form.id && <Button type="button" variant="outline" onClick={() => setForm(initialForm)}>Novo</Button>}
+                <Button type="submit" disabled={saving}>{saving ? 'Salvando...' : form.id ? 'Salvar alterações' : 'Cadastrar'}</Button>
+                {form.id && <Button type="button" variant="outline" disabled={saving} onClick={() => setForm(initialForm)}>Novo</Button>}
               </div>
             </form>
           </CardContent>

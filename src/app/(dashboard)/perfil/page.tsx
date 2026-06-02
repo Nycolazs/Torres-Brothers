@@ -35,6 +35,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { profileSchema } from '@/lib/validations';
 import { auth } from '@/lib/firebase';
 import { USER_ACCESS_STATUS_LABELS } from '@/constants';
+import { maskPhone } from '@/lib/utils';
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
@@ -150,7 +151,15 @@ export default function PerfilPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Telefone</Label>
-                  <Input {...registerProfile('phone')} placeholder="(11) 99999-9999" />
+                  <Input
+                    {...registerProfile('phone', {
+                      onChange: (event) => {
+                        event.target.value = maskPhone(event.target.value);
+                      },
+                    })}
+                    inputMode="tel"
+                    placeholder="(11) 99999-9999"
+                  />
                 </div>
                 <Button type="submit" disabled={!profileDirty}>
                   <Save className="h-4 w-4 mr-2" />

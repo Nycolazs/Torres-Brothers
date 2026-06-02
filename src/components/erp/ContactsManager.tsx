@@ -33,7 +33,7 @@ import { listFiscalInvoices } from '@/services/fiscalInvoiceService';
 import { getTransactionsByDateRange } from '@/services/transactionService';
 import { buildClientErrorPayload, logClientError } from '@/services/errorLogService';
 import { Charge, Contact, ContactFormData, ContactType, FiscalInvoice, Transaction } from '@/types';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, maskCep, maskCpfCnpj, maskPhone } from '@/lib/utils';
 
 const emptyForm = (type: ContactType): ContactFormData => ({
   type,
@@ -58,6 +58,12 @@ const emptyForm = (type: ContactType): ContactFormData => ({
   notes: '',
 });
 
+const contactTypeLabels: Record<ContactType, string> = {
+  customer: 'Cliente',
+  supplier: 'Fornecedor',
+  both: 'Cliente e fornecedor',
+};
+
 interface ContactsManagerProps {
   mode: 'customer' | 'supplier';
 }
@@ -70,6 +76,7 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
   const [invoices, setInvoices] = useState<FiscalInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState('');
   const [form, setForm] = useState<ContactFormData>(emptyForm(mode));
   const title = mode === 'customer' ? 'Clientes' : 'Fornecedores';
@@ -191,12 +198,14 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (saving) return;
     if (!companyUid) return;
     if (!form.name.trim()) {
       toast.error(`Informe o nome do ${singular}.`);
       return;
     }
 
+    setSaving(true);
     try {
       await saveContact(companyUid, form);
       toast.success(`${title.slice(0, -1)} salvo com sucesso.`);
@@ -205,7 +214,9 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
     } catch (error) {
       const payload = buildClientErrorPayload(error, 'ContactsManager.save', { mode, id: form.id }, user?.uid);
       void logClientError(payload);
-      toast.error(`Erro ao salvar ${singular}.`);
+      toast.error(error instanceof Error ? error.message : `Erro ao salvar ${singular}.`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -260,7 +271,12 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
                 </div>
                 <div className="space-y-2">
                   <Label>CPF/CNPJ</Label>
-                  <Input value={form.document} onChange={(e) => setForm({ ...form, document: e.target.value })} />
+                  <Input
+                    inputMode="numeric"
+                    value={form.document}
+                    onChange={(e) => setForm({ ...form, document: maskCpfCnpj(e.target.value) })}
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>E-mail</Label>
@@ -268,12 +284,17 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
                 </div>
                 <div className="space-y-2">
                   <Label>Telefone</Label>
-                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  <Input
+                    inputMode="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: maskPhone(e.target.value) })}
+                    placeholder="(00) 00000-0000"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Tipo</Label>
                   <Select value={form.type} onValueChange={(value) => value && setForm({ ...form, type: value as ContactType })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger><SelectValue>{contactTypeLabels[form.type]}</SelectValue></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="customer">Cliente</SelectItem>
                       <SelectItem value="supplier">Fornecedor</SelectItem>
@@ -294,7 +315,12 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>CEP</Label>
-                  <Input value={form.address?.zipCode} onChange={(e) => updateAddress('zipCode', e.target.value)} />
+                  <Input
+                    inputMode="numeric"
+                    value={form.address?.zipCode}
+                    onChange={(e) => updateAddress('zipCode', maskCep(e.target.value))}
+                    placeholder="00000-000"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Código IBGE</Label>
@@ -328,8 +354,8 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
               </div>
 
               <div className="flex gap-2">
-                <Button type="submit" disabled={!can('contacts:write')}>
-                  {form.id ? 'Salvar alterações' : 'Cadastrar'}
+                <Button type="submit" disabled={!can('contacts:write') || saving}>
+                  {saving ? 'Salvando...' : form.id ? 'Salvar alterações' : 'Cadastrar'}
                 </Button>
                 {form.id && (
                   <Button type="button" variant="outline" onClick={() => setForm(emptyForm(mode))}>

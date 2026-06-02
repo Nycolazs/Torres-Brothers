@@ -54,6 +54,7 @@ export default function ConciliacaoBancariaPage() {
   const [imports, setImports] = useState<BankStatementImport[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [statusFilter, setStatusFilter] = useState<ReconciliationStatus | 'all'>('all');
+  const selectedBankAccountLabel = accounts.find((account) => account.id === bankAccountId)?.name || 'Selecione a conta';
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -162,7 +163,7 @@ export default function ConciliacaoBancariaPage() {
           <div className="space-y-2 md:w-80">
             <Label>Conta bancária</Label>
             <Select value={bankAccountId} onValueChange={(value) => value && setBankAccountId(value)}>
-              <SelectTrigger><SelectValue placeholder="Selecione a conta" /></SelectTrigger>
+              <SelectTrigger><SelectValue>{selectedBankAccountLabel}</SelectValue></SelectTrigger>
               <SelectContent>
                 {accounts.map((account) => <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>)}
               </SelectContent>
@@ -175,7 +176,7 @@ export default function ConciliacaoBancariaPage() {
           <div className="space-y-2 md:w-48">
             <Label>Status</Label>
             <Select value={statusFilter} onValueChange={(value) => value && setStatusFilter(value as ReconciliationStatus | 'all')}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger><SelectValue>{statusFilter === 'all' ? 'Todos' : statusLabels[statusFilter]}</SelectValue></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 {Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}

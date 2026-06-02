@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getPaymentProvider } from '@/lib/paymentProvider';
+import { onlyDigits } from '@/lib/utils';
 import {
   BankStatementImport,
   BankStatementItem,
@@ -64,14 +65,18 @@ async function logAudit(
   entityId: string,
   metadata?: Record<string, unknown>
 ) {
-  await addDoc(userCol(uid, 'auditLogs'), {
-    action,
-    entity,
-    entityId,
-    metadata: metadata || {},
-    createdAt: Timestamp.now(),
-    uid,
-  });
+  try {
+    await addDoc(userCol(uid, 'auditLogs'), {
+      action,
+      entity,
+      entityId,
+      metadata: metadata || {},
+      createdAt: Timestamp.now(),
+      uid,
+    });
+  } catch (error) {
+    console.warn('[ERPService] Auditoria ignorada para não bloquear a operação:', error);
+  }
 }
 
 export function buildContactSnapshot(contact: Contact): ContactSnapshot {
@@ -100,11 +105,26 @@ export async function listContacts(uid: string, type?: ContactType): Promise<Con
 
 export async function saveContact(uid: string, data: ContactFormData): Promise<string> {
   const now = Timestamp.now();
+  const normalizedDocument = onlyDigits(data.document || '');
+  if (normalizedDocument) {
+    const existingContacts = await listContacts(uid);
+    const duplicatedContact = existingContacts.find((contact) => {
+      if (contact.id === data.id) return false;
+      const contactDocument = contact.normalizedDocument || onlyDigits(contact.document || '');
+      return contactDocument === normalizedDocument;
+    });
+
+    if (duplicatedContact) {
+      throw new Error(`Já existe um cadastro com este CPF/CNPJ: ${duplicatedContact.name}.`);
+    }
+  }
+
   const record = cleanRecord({
     type: data.type,
     name: data.name.trim(),
     tradeName: data.tradeName?.trim() || null,
     document: data.document?.trim() || null,
+    normalizedDocument: normalizedDocument || null,
     email: data.email?.trim() || null,
     phone: data.phone?.trim() || null,
     mobile: data.mobile?.trim() || null,

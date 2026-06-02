@@ -376,7 +376,7 @@ export function TransactionModal({
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecionar conta gerencial">
-                        {selectedFinancialAccount?.name}
+                        {selectedFinancialAccount?.name || 'Sem conta gerencial'}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -407,7 +407,7 @@ export function TransactionModal({
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecionar cadastro">
-                        {selectedContact?.name}
+                        {selectedContact?.name || 'Sem cadastro vinculado'}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -545,7 +545,7 @@ export function TransactionModal({
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecionar">
-                        {selectedPaymentMethod ? PAYMENT_METHOD_LABELS[selectedPaymentMethod] : undefined}
+                        {selectedPaymentMethod ? PAYMENT_METHOD_LABELS[selectedPaymentMethod] : 'Não informado'}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -619,7 +619,7 @@ export function TransactionModal({
                       <SelectValue placeholder="Selecionar frequência">
                         {selectedRecurrenceType
                           ? RECURRENCE_TYPE_LABELS[selectedRecurrenceType]
-                          : undefined}
+                          : 'Sem frequência'}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>

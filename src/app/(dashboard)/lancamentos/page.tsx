@@ -266,7 +266,7 @@ export default function LancamentosPage() {
             onValueChange={(v) => setItemsPerPage(Number(v))}
           >
             <SelectTrigger className="w-[70px] h-8">
-              <SelectValue />
+              <SelectValue>{itemsPerPage}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {ITEMS_PER_PAGE_OPTIONS.map((n) => (

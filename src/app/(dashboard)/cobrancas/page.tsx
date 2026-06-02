@@ -67,6 +67,7 @@ export default function CobrancasPage() {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ChargeStatus | 'all'>('all');
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   async function load() {
     if (!companyUid) return;
@@ -117,8 +118,22 @@ export default function CobrancasPage() {
     });
   }, [charges, query, statusFilter]);
 
+  const selectedReceivableLabel = useMemo(() => {
+    if (!form.transactionId) return 'Cobrança avulsa';
+    const receivable = receivables.find((item) => item.id === form.transactionId);
+    return receivable
+      ? `${receivable.description} - ${formatCurrency(receivable.remainingAmount ?? receivable.amount)}`
+      : 'Cobrança avulsa';
+  }, [form.transactionId, receivables]);
+
+  const selectedContactLabel = useMemo(() => {
+    if (!form.contactId) return 'Sem cliente';
+    return contacts.find((contact) => contact.id === form.contactId)?.name || 'Sem cliente';
+  }, [contacts, form.contactId]);
+
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (saving) return;
     if (!companyUid) return;
     if (!form.description.trim() || form.amount <= 0) {
       toast.error('Informe descrição e valor da cobrança.');
@@ -138,6 +153,7 @@ export default function CobrancasPage() {
         return;
       }
     }
+    setSaving(true);
     try {
       await saveCharge(companyUid, {
         ...form,
@@ -148,6 +164,8 @@ export default function CobrancasPage() {
       await load();
     } catch {
       toast.error('Erro ao salvar cobrança.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -196,7 +214,9 @@ export default function CobrancasPage() {
             <Input className="pl-9" placeholder="Buscar cobrança ou cliente" value={query} onChange={(event) => setQuery(event.target.value)} />
           </div>
           <Select value={statusFilter} onValueChange={(value) => value && setStatusFilter(value as ChargeStatus | 'all')}>
-            <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="md:w-48">
+              <SelectValue>{statusFilter === 'all' ? 'Todos os status' : statusLabels[statusFilter]}</SelectValue>
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os status</SelectItem>
               {Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
@@ -219,7 +239,7 @@ export default function CobrancasPage() {
               <div className="space-y-2">
                 <Label>Conta a receber vinculada</Label>
                 <Select value={form.transactionId || 'none'} onValueChange={handleReceivableChange}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{selectedReceivableLabel}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Cobrança avulsa</SelectItem>
                     {receivables.map((receivable) => (
@@ -236,7 +256,7 @@ export default function CobrancasPage() {
                   value={form.contactId || 'none'}
                   onValueChange={(value) => setForm({ ...form, contactId: !value || value === 'none' ? undefined : value })}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{selectedContactLabel}</SelectValue></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Sem cliente</SelectItem>
                     {contacts.map((contact) => <SelectItem key={contact.id} value={contact.id}>{contact.name}</SelectItem>)}
@@ -259,7 +279,7 @@ export default function CobrancasPage() {
                 <div className="space-y-2">
                   <Label>Método</Label>
                   <Select value={form.method} onValueChange={(value) => value && setForm({ ...form, method: value as ChargeMethod })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger><SelectValue>{methodLabels[form.method]}</SelectValue></SelectTrigger>
                     <SelectContent>
                       {Object.entries(methodLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
                     </SelectContent>
@@ -268,14 +288,14 @@ export default function CobrancasPage() {
                 <div className="space-y-2">
                   <Label>Status</Label>
                   <Select value={form.status} onValueChange={(value) => value && setForm({ ...form, status: value as ChargeStatus })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger><SelectValue>{statusLabels[form.status]}</SelectValue></SelectTrigger>
                     <SelectContent>
                       {Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              <Button type="submit">Salvar cobrança</Button>
+              <Button type="submit" disabled={saving}>{saving ? 'Salvando...' : 'Salvar cobrança'}</Button>
             </form>
           </CardContent>
         </Card>

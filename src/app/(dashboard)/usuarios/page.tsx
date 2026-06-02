@@ -267,7 +267,7 @@ export default function UsuariosPage() {
                             disabled={isBusy}
                           >
                             <SelectTrigger className="h-9 w-48">
-                              <SelectValue />
+                              <SelectValue>{USER_ROLE_LABELS[listedUser.role]}</SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               {Object.entries(USER_ROLE_LABELS)

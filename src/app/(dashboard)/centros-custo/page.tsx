@@ -42,7 +42,7 @@ export default function CentrosCustoPage() {
   const [editingCenter, setEditingCenter] = useState<CostCenter | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(costCenterSchema),
     defaultValues: { name: '', description: '', isActive: true },
   });
@@ -181,8 +181,8 @@ export default function CentrosCustoPage() {
               <Textarea {...register('description')} placeholder="Descrição opcional" rows={3} />
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-              <Button type="submit">{editingCenter ? 'Salvar' : 'Criar'}</Button>
+              <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setModalOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Salvando...' : editingCenter ? 'Salvar' : 'Criar'}</Button>
             </div>
           </form>
         </DialogContent>

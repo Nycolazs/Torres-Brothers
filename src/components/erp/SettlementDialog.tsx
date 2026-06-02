@@ -52,6 +52,8 @@ export function SettlementDialog({
   const [submitting, setSubmitting] = useState(false);
 
   const remaining = transaction?.remainingAmount ?? transaction?.amount ?? 0;
+  const selectedBankAccountLabel =
+    bankAccounts.find((account) => account.id === (bankAccountId || bankAccounts[0]?.id))?.name || 'Selecione';
 
   const generateReceipt = (receiptId: string) => {
     if (!transaction) return;
@@ -148,7 +150,7 @@ export function SettlementDialog({
               <div className="space-y-2">
                 <Label>Conta bancária</Label>
                 <Select value={bankAccountId || bankAccounts[0]?.id || ''} onValueChange={(value) => value && setBankAccountId(value)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{selectedBankAccountLabel}</SelectValue></SelectTrigger>
                   <SelectContent>
                     {bankAccounts.map((account) => <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>)}
                   </SelectContent>
@@ -157,7 +159,7 @@ export function SettlementDialog({
               <div className="space-y-2 sm:col-span-2">
                 <Label>Forma de pagamento</Label>
                 <Select value={paymentMethod} onValueChange={(value) => value && setPaymentMethod(value as PaymentMethod)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger><SelectValue>{PAYMENT_METHOD_LABELS[paymentMethod]}</SelectValue></SelectTrigger>
                   <SelectContent>
                     {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
                       <SelectItem key={value} value={value}>{label}</SelectItem>

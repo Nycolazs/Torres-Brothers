@@ -49,7 +49,7 @@ export default function CategoriasPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(categorySchema),
     defaultValues: { name: '', type: 'expense', color: '#3b82f6', icon: 'Tag' },
   });
@@ -199,8 +199,8 @@ export default function CategoriasPage() {
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-              <Button type="submit">{editingCategory ? 'Salvar' : 'Criar'}</Button>
+              <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setModalOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Salvando...' : editingCategory ? 'Salvar' : 'Criar'}</Button>
             </div>
           </form>
         </DialogContent>

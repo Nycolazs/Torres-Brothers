@@ -67,6 +67,10 @@ export function PaidTransactionsPage({ kind }: PaidTransactionsPageProps) {
   }, [bankAccountId, query, transactions]);
 
   const total = useMemo(() => filteredTransactions.reduce((sum, item) => sum + item.amount, 0), [filteredTransactions]);
+  const selectedBankAccountLabel = useMemo(() => {
+    if (bankAccountId === 'all') return 'Todas as contas';
+    return accounts.find((account) => account.id === bankAccountId)?.name || 'Todas as contas';
+  }, [accounts, bankAccountId]);
 
   return (
     <div className="space-y-6">
@@ -89,7 +93,7 @@ export function PaidTransactionsPage({ kind }: PaidTransactionsPageProps) {
             <Input className="pl-9" placeholder="Buscar descrição ou contato" value={query} onChange={(event) => setQuery(event.target.value)} />
           </div>
           <Select value={bankAccountId} onValueChange={(value) => value && setBankAccountId(value)}>
-            <SelectTrigger className="md:w-56"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="md:w-56"><SelectValue>{selectedBankAccountLabel}</SelectValue></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as contas</SelectItem>
               {accounts.map((account) => <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>)}

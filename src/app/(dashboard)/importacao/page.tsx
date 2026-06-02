@@ -33,6 +33,12 @@ const examples: Record<ImportKind, string> = {
   transactions: 'type;description;amount;categoryId;bankAccountId;dueDate;status',
 };
 
+const importKindLabels: Record<ImportKind, string> = {
+  customers: 'Clientes',
+  suppliers: 'Fornecedores',
+  transactions: 'Lançamentos',
+};
+
 export default function ImportacaoPage() {
   const { companyUid, can } = useAuth();
   const [kind, setKind] = useState<ImportKind>('customers');
@@ -170,7 +176,7 @@ export default function ImportacaoPage() {
             <div className="space-y-2">
               <Label>Tipo de importação</Label>
               <Select value={kind} onValueChange={(value) => setKind(value as ImportKind)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><SelectValue>{importKindLabels[kind]}</SelectValue></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="customers">Clientes</SelectItem>
                   <SelectItem value="suppliers">Fornecedores</SelectItem>
