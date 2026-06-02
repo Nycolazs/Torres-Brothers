@@ -72,8 +72,6 @@ export function TransactionModal({
 }: TransactionModalProps) {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAmountFocused, setIsAmountFocused] = useState(false);
-  const [amountInput, setAmountInput] = useState('');
   const isEditing = !!transaction;
 
   const {
@@ -299,24 +297,18 @@ export function TransactionModal({
                     id="amount"
                     type="text"
                     inputMode="decimal"
-                    value={isAmountFocused ? amountInput : field.value ? formatCurrency(field.value) : ''}
+                    value={field.value ? formatCurrency(field.value) : ''}
                     onChange={(event) => {
                       const rawValue = event.target.value;
-                      setAmountInput(rawValue);
                       const normalizedValue = rawValue.includes(',') || rawValue.includes('R$')
                         ? parseBRLCurrency(rawValue)
                         : Number(rawValue.replace(/[^\d.]/g, '')) || 0;
                       field.onChange(normalizedValue);
                     }}
                     onFocus={(event) => {
-                      setIsAmountFocused(true);
-                      setAmountInput(field.value ? String(field.value).replace('.', ',') : '');
                       event.currentTarget.select();
                     }}
-                    onBlur={() => {
-                      setIsAmountFocused(false);
-                      field.onBlur();
-                    }}
+                    onBlur={field.onBlur}
                     placeholder="R$ 0,00"
                   />
                 )}
