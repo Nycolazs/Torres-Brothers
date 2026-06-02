@@ -9,9 +9,11 @@ import {
   Receipt,
   ArrowUpCircle,
   ArrowDownCircle,
+  BadgeDollarSign,
   Wallet,
   BarChart3,
   FileCheck2,
+  FileInput,
   FileText,
   Tag,
   Landmark,
@@ -20,6 +22,14 @@ import {
   Settings,
   CircleHelp,
   Users,
+  UserRound,
+  Truck,
+  BriefcaseBusiness,
+  FolderTree,
+  GitCompareArrows,
+  CircleCheck,
+  History,
+  PlugZap,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -29,16 +39,25 @@ const mainNavItems = [
   { href: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard, hint: 'Indicadores principais da operação' },
   { href: '/lancamentos', label: 'Lançamentos', icon: Receipt, hint: 'Cadastre receitas, custos e despesas' },
   { href: '/contas-pagar', label: 'Contas a Pagar', icon: ArrowUpCircle, hint: 'Controle vencimentos e pagamentos' },
+  { href: '/contas-pagas', label: 'Contas Pagas', icon: CircleCheck, hint: 'Histórico de pagamentos liquidados' },
   { href: '/contas-receber', label: 'Contas a Receber', icon: ArrowDownCircle, hint: 'Acompanhe recebimentos e inadimplência' },
+  { href: '/contas-recebidas', label: 'Contas Recebidas', icon: BadgeDollarSign, hint: 'Histórico de recebimentos liquidados' },
   { href: '/fluxo-caixa', label: 'Fluxo de Caixa', icon: Wallet, hint: 'Entradas e saídas no período' },
+  { href: '/conciliacao-bancaria', label: 'Conciliação', icon: GitCompareArrows, hint: 'Importe OFX e concilie movimentos bancários' },
+  { href: '/cobrancas', label: 'Cobranças', icon: BadgeDollarSign, hint: 'Emita e acompanhe cobranças' },
   { href: '/dre', label: 'DRE', icon: BarChart3, hint: 'Resultado do exercício por período' },
   { href: '/notas-fiscais', label: 'Notas Fiscais', icon: FileCheck2, hint: 'Emita e acompanhe NFS-e' },
+  { href: '/notas-recebidas', label: 'Notas Recebidas', icon: FileInput, hint: 'Preparação para entrada fiscal' },
   { href: '/relatorios', label: 'Relatórios', icon: FileText, hint: 'Exporte informações em PDF e Excel' },
   { href: '/ajuda', label: 'Ajuda', icon: CircleHelp, hint: 'Guia rápido de uso do sistema' },
 ];
 
 const cadastrosNavItems = [
+  { href: '/clientes', label: 'Clientes', icon: UserRound, hint: 'Cadastro reutilizável de clientes' },
+  { href: '/fornecedores', label: 'Fornecedores', icon: Truck, hint: 'Cadastro reutilizável de fornecedores' },
+  { href: '/servicos', label: 'Serviços', icon: BriefcaseBusiness, hint: 'Catálogo para NFS-e e cobranças' },
   { href: '/categorias', label: 'Categorias', icon: Tag, hint: 'Organize os tipos de lançamentos' },
+  { href: '/contas-gerenciais', label: 'Contas Gerenciais', icon: FolderTree, hint: 'Classificação para DRE e fluxo' },
   { href: '/contas-bancarias', label: 'Contas Bancárias', icon: Landmark, hint: 'Gerencie contas e saldos' },
   { href: '/centros-custo', label: 'Centros de Custo', icon: Building, hint: 'Separe resultados por área' },
   { href: '/orcamento', label: 'Orçamento', icon: PieChart, hint: 'Defina metas e limites por categoria' },
@@ -50,6 +69,8 @@ const accountNavItems = [
 
 const adminNavItems = [
   { href: '/usuarios', label: 'Usuários', icon: Users, hint: 'Aprove acessos e gerencie permissões' },
+  { href: '/auditoria', label: 'Auditoria', icon: History, hint: 'Consulte ações críticas do sistema' },
+  { href: '/provedores-financeiros', label: 'Provedores', icon: PlugZap, hint: 'Prepare integrações financeiras' },
 ];
 
 interface SidebarProps {

@@ -30,7 +30,15 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { transactionSchema } from '@/lib/validations';
-import { Transaction, TransactionFormData, TransactionType, Category, BankAccount } from '@/types';
+import {
+  BankAccount,
+  Category,
+  Contact,
+  FinancialAccount,
+  Transaction,
+  TransactionFormData,
+  TransactionType,
+} from '@/types';
 import {
   TRANSACTION_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -45,6 +53,8 @@ interface TransactionModalProps {
   transaction?: Transaction | null;
   categories: Category[];
   bankAccounts: BankAccount[];
+  contacts?: Contact[];
+  financialAccounts?: FinancialAccount[];
   onSubmit: (data: TransactionFormData) => Promise<void>;
 }
 
@@ -54,6 +64,8 @@ export function TransactionModal({
   transaction,
   categories,
   bankAccounts,
+  contacts = [],
+  financialAccounts = [],
   onSubmit,
 }: TransactionModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,7 +86,9 @@ export function TransactionModal({
       description: '',
       amount: 0,
       categoryId: '',
+      financialAccountId: '',
       bankAccountId: '',
+      contactId: '',
       competenceDate: new Date(),
       dueDate: new Date(),
       status: 'pending',
@@ -93,6 +107,8 @@ export function TransactionModal({
 
   const filteredCategories = categories.filter((c) => c.type === selectedType);
   const selectedCategory = categories.find((c) => c.id === watch('categoryId'));
+  const selectedFinancialAccount = financialAccounts.find((account) => account.id === watch('financialAccountId'));
+  const selectedContact = contacts.find((contact) => contact.id === watch('contactId'));
   const selectedBankAccount = bankAccounts.find((acc) => acc.id === watch('bankAccountId'));
   const selectedPaymentMethod = watch('paymentMethod');
   const selectedRecurrenceType = watch('recurrenceType');
@@ -126,6 +142,15 @@ export function TransactionModal({
     return name;
   };
 
+  const filteredContacts = contacts.filter((contact) => {
+    if (selectedType === 'income') return contact.type === 'customer' || contact.type === 'both';
+    return contact.type === 'supplier' || contact.type === 'both';
+  });
+
+  const filteredFinancialAccounts = financialAccounts.filter(
+    (account) => account.type === selectedType && account.isActive
+  );
+
   useEffect(() => {
     if (transaction) {
       reset({
@@ -133,8 +158,10 @@ export function TransactionModal({
         description: transaction.description,
         amount: transaction.amount,
         categoryId: transaction.categoryId,
+        financialAccountId: transaction.financialAccountId || '',
         costCenterId: transaction.costCenterId || '',
         bankAccountId: transaction.bankAccountId,
+        contactId: transaction.contactId || '',
         competenceDate: transaction.competenceDate.toDate(),
         dueDate: transaction.dueDate.toDate(),
         paymentDate: transaction.paymentDate?.toDate(),
@@ -154,7 +181,9 @@ export function TransactionModal({
         description: '',
         amount: 0,
         categoryId: '',
+        financialAccountId: '',
         bankAccountId: bankAccounts[0]?.id || '',
+        contactId: '',
         competenceDate: new Date(),
         dueDate: new Date(),
         status: 'pending',
@@ -170,8 +199,10 @@ export function TransactionModal({
   const onFormSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
+      const transactionData = { ...data };
+      delete transactionData.contactSnapshot;
       const formData: TransactionFormData = {
-        ...data,
+        ...transactionData,
         id: transaction?.id,
         tags: parseTagsInput(data.tags),
         paymentDate: data.status === 'paid' ? (data.paymentDate || new Date()) : undefined,
@@ -219,6 +250,8 @@ export function TransactionModal({
                       onClick={() => {
                         field.onChange(value);
                         setValue('categoryId', '');
+                        setValue('financialAccountId', '');
+                        setValue('contactId', '');
                       }}
                     >
                       {label}
@@ -311,6 +344,62 @@ export function TransactionModal({
               {errors.bankAccountId && (
                 <p className="text-sm text-destructive">{errors.bankAccountId.message}</p>
               )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Conta gerencial</Label>
+              <Controller
+                name="financialAccountId"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value || ''} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecionar conta gerencial">
+                        {selectedFinancialAccount?.name}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredFinancialAccounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{selectedType === 'income' ? 'Cliente cadastrado' : 'Fornecedor cadastrado'}</Label>
+              <Controller
+                name="contactId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value || ''}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      const contact = contacts.find((item) => item.id === value);
+                      if (contact) setValue('contactName', contact.name);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecionar cadastro">
+                        {selectedContact?.name}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredContacts.map((contact) => (
+                        <SelectItem key={contact.id} value={contact.id}>
+                          {contact.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 

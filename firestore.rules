@@ -132,6 +132,48 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
     }
 
+    match /users/{userId}/contacts/{document=**} {
+      allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
+    }
+
+    match /users/{userId}/services/{document=**} {
+      allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
+    }
+
+    match /users/{userId}/financialAccounts/{document=**} {
+      allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
+    }
+
+    match /users/{userId}/transactionPayments/{document=**} {
+      allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
+    }
+
+    match /users/{userId}/bankStatementImports/{document=**} {
+      allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
+    }
+
+    match /users/{userId}/bankStatementItems/{document=**} {
+      allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
+    }
+
+    match /users/{userId}/reconciliations/{document=**} {
+      allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
+    }
+
+    match /users/{userId}/charges/{document=**} {
+      allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
+    }
+
+    match /users/{userId}/auditLogs/{document=**} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
+      allow update, delete: if false;
+    }
+
+    match /users/{userId}/providerSettings/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

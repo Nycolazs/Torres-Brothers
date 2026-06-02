@@ -42,7 +42,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [companyUid, setCompanyUid] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(auth));
 
   const seedCompanyData = useCallback(async (uid: string) => {
     await Promise.all([
@@ -74,6 +74,10 @@ function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    if (!auth) {
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
@@ -89,6 +93,10 @@ function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshProfileState]);
 
   const signInWithGoogle = useCallback(async () => {
+    if (!auth) {
+      throw new Error('Firebase não está configurado.');
+    }
+
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     let cred;
@@ -112,6 +120,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshProfileState]);
 
   const signOut = useCallback(async () => {
+    if (!auth) return;
     await firebaseSignOut(auth);
     setUser(null);
     setProfile(null);
@@ -119,6 +128,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshProfile = useCallback(async () => {
+    if (!auth) return null;
     if (!auth.currentUser) return null;
 
     const result = await refreshProfileState(auth.currentUser);
@@ -127,7 +137,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUserProfile = useCallback(
     async (data: Partial<UserProfile>) => {
-      if (!user) return;
+      if (!user || !db) return;
       const ref = doc(db, 'users', user.uid, 'profile', 'main');
       const updated = {
         ...data,

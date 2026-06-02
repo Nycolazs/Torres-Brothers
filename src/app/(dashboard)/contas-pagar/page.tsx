@@ -9,10 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { KpiCardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { SettlementDialog } from '@/components/erp/SettlementDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { getTransactionsByDateRange } from '@/services/transactionService';
-import { markAsPaid } from '@/services/transactionService';
 import { Transaction } from '@/types';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import { addDays, endOfDay, endOfMonth, startOfDay, isBefore, isToday } from 'date-fns';
@@ -22,30 +22,30 @@ export default function ContasPagarPage() {
   const { accounts } = useBankAccounts();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [settlementTransaction, setSettlementTransaction] = useState<Transaction | null>(null);
+  const [settlementOpen, setSettlementOpen] = useState(false);
+
+  const loadTransactions = async (activeUid: string) => {
+    setLoading(true);
+    try {
+      const data = await getTransactionsByDateRange(activeUid, new Date(2020, 0, 1), new Date(2030, 11, 31));
+      const unpaid = data.filter(
+        (t) =>
+          (t.type === 'expense' || t.type === 'cost') &&
+          t.status !== 'paid' &&
+          t.status !== 'cancelled'
+      );
+      setTransactions(unpaid);
+    } catch {
+      toast.error('Erro ao carregar contas a pagar.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const activeCompanyUid = companyUid;
     if (!activeCompanyUid) return;
-    const start = new Date(2020, 0, 1);
-    const end = new Date(2030, 11, 31);
-
-    async function loadTransactions(activeUid: string) {
-      setLoading(true);
-      try {
-        const data = await getTransactionsByDateRange(activeUid, start, end);
-        const unpaid = data.filter(
-          (t) =>
-            (t.type === 'expense' || t.type === 'cost') &&
-            t.status !== 'paid' &&
-            t.status !== 'cancelled'
-        );
-        setTransactions(unpaid);
-      } catch {
-        toast.error('Erro ao carregar contas a pagar.');
-      } finally {
-        setLoading(false);
-      }
-    }
 
     loadTransactions(activeCompanyUid);
   }, [companyUid]);
@@ -85,20 +85,9 @@ export default function ContasPagarPage() {
     0
   );
 
-  const handleMarkAsPaid = async (id: string) => {
-    if (!companyUid) return;
-    const defaultAccount = accounts[0]?.id;
-    if (!defaultAccount) {
-      toast.error('Cadastre uma conta bancária primeiro.');
-      return;
-    }
-    try {
-      await markAsPaid(companyUid, id, new Date(), defaultAccount);
-      setTransactions((prev) => prev.filter((t) => t.id !== id));
-      toast.success('Conta marcada como paga!');
-    } catch {
-      toast.error('Erro ao marcar como pago.');
-    }
+  const openSettlement = (transaction: Transaction) => {
+    setSettlementTransaction(transaction);
+    setSettlementOpen(true);
   };
 
   const renderGroup = (title: string, items: Transaction[], variant: 'destructive' | 'warning' | 'default') => {
@@ -143,7 +132,7 @@ export default function ContasPagarPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleMarkAsPaid(t.id)}
+                  onClick={() => openSettlement(t)}
                   className="shrink-0"
                 >
                   <CheckCircle className="h-4 w-4 mr-1" />
@@ -217,6 +206,15 @@ export default function ContasPagarPage() {
           {renderGroup(`Futuras (${groups.future.length})`, groups.future, 'default')}
         </div>
       )}
+
+      <SettlementDialog
+        uid={companyUid}
+        transaction={settlementTransaction}
+        bankAccounts={accounts}
+        open={settlementOpen}
+        onOpenChange={setSettlementOpen}
+        onSettled={() => companyUid ? loadTransactions(companyUid) : undefined}
+      />
     </div>
   );
 }

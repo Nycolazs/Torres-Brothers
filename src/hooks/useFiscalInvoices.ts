@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { auth } from '@/lib/firebase';
 import { FiscalInvoice, FiscalInvoiceFormData } from '@/types';
 import {
+  cancelFiscalInvoice,
   createFiscalInvoiceDraft,
   listFiscalInvoices,
   updateFiscalInvoiceStatus,
@@ -12,6 +13,7 @@ import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
 async function getAuthorizationHeader(): Promise<Record<string, string>> {
+  if (!auth) return {};
   const token = await auth.currentUser?.getIdToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -103,5 +105,19 @@ export function useFiscalInvoices() {
     [companyUid, refresh]
   );
 
-  return { invoices, loading, issuing, issueInvoice, consultInvoice, refresh };
+  const cancelInvoice = useCallback(
+    async (invoice: FiscalInvoice) => {
+      if (!companyUid) return;
+      try {
+        await cancelFiscalInvoice(companyUid, invoice.id, 'Cancelamento solicitado no sistema.');
+        toast.success('Nota cancelada no histórico interno.');
+        await refresh();
+      } catch {
+        toast.error('Erro ao cancelar nota fiscal.');
+      }
+    },
+    [companyUid, refresh]
+  );
+
+  return { invoices, loading, issuing, issueInvoice, consultInvoice, cancelInvoice, refresh };
 }

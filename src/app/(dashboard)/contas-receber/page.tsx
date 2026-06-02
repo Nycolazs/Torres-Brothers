@@ -9,9 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { KpiCard } from '@/components/dashboard/KpiCard';
 import { KpiCardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { SettlementDialog } from '@/components/erp/SettlementDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useBankAccounts } from '@/hooks/useBankAccounts';
-import { getTransactionsByDateRange, markAsPaid } from '@/services/transactionService';
+import { getTransactionsByDateRange } from '@/services/transactionService';
 import { Transaction } from '@/types';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import { addDays, endOfDay, endOfMonth, startOfDay, isBefore, isToday } from 'date-fns';
@@ -21,30 +22,31 @@ export default function ContasReceberPage() {
   const { accounts } = useBankAccounts();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [settlementTransaction, setSettlementTransaction] = useState<Transaction | null>(null);
+  const [settlementOpen, setSettlementOpen] = useState(false);
+
+  const loadTransactions = async (activeUid: string) => {
+    setLoading(true);
+    try {
+      const data = await getTransactionsByDateRange(
+        activeUid,
+        new Date(2020, 0, 1),
+        new Date(2030, 11, 31)
+      );
+      const unpaid = data.filter(
+        (t) => t.type === 'income' && t.status !== 'paid' && t.status !== 'cancelled'
+      );
+      setTransactions(unpaid);
+    } catch {
+      toast.error('Erro ao carregar contas a receber.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const activeCompanyUid = companyUid;
     if (!activeCompanyUid) return;
-
-    async function loadTransactions(activeUid: string) {
-      setLoading(true);
-      try {
-        const data = await getTransactionsByDateRange(
-          activeUid,
-          new Date(2020, 0, 1),
-          new Date(2030, 11, 31)
-        );
-        const unpaid = data.filter(
-          (t) => t.type === 'income' && t.status !== 'paid' && t.status !== 'cancelled'
-        );
-        setTransactions(unpaid);
-      } catch {
-        toast.error('Erro ao carregar contas a receber.');
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadTransactions(activeCompanyUid);
   }, [companyUid]);
   const groups = useMemo(() => {
@@ -72,20 +74,9 @@ export default function ContasReceberPage() {
   const totalAll = transactions.reduce((s, t) => s + t.amount, 0);
   const inadimplencia = totalAll > 0 ? (totalOverdue / totalAll) * 100 : 0;
 
-  const handleMarkAsReceived = async (id: string) => {
-    if (!companyUid) return;
-    const defaultAccount = accounts[0]?.id;
-    if (!defaultAccount) {
-      toast.error('Cadastre uma conta bancária primeiro.');
-      return;
-    }
-    try {
-      await markAsPaid(companyUid, id, new Date(), defaultAccount);
-      setTransactions((prev) => prev.filter((t) => t.id !== id));
-      toast.success('Recebimento confirmado!');
-    } catch {
-      toast.error('Erro ao confirmar recebimento.');
-    }
+  const openSettlement = (transaction: Transaction) => {
+    setSettlementTransaction(transaction);
+    setSettlementOpen(true);
   };
 
   const renderGroup = (title: string, items: Transaction[], variant: 'destructive' | 'warning' | 'default') => {
@@ -121,7 +112,7 @@ export default function ContasReceberPage() {
                 <span className="text-sm font-semibold text-emerald-600 tabular-nums">
                   {formatCurrency(t.amount)}
                 </span>
-                <Button size="sm" variant="outline" onClick={() => handleMarkAsReceived(t.id)} className="shrink-0">
+                <Button size="sm" variant="outline" onClick={() => openSettlement(t)} className="shrink-0">
                   <CheckCircle className="h-4 w-4 mr-1" />
                   Receber
                 </Button>
@@ -165,6 +156,15 @@ export default function ContasReceberPage() {
           {renderGroup(`Futuras (${groups.future.length})`, groups.future, 'default')}
         </div>
       )}
+
+      <SettlementDialog
+        uid={companyUid}
+        transaction={settlementTransaction}
+        bankAccounts={accounts}
+        open={settlementOpen}
+        onOpenChange={setSettlementOpen}
+        onSettled={() => companyUid ? loadTransactions(companyUid) : undefined}
+      />
     </div>
   );
 }

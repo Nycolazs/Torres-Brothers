@@ -1,5 +1,6 @@
 import {
   addDoc,
+  arrayUnion,
   collection,
   doc,
   DocumentSnapshot,
@@ -68,6 +69,11 @@ export async function updateFiscalInvoiceStatus(
 ) {
   const record: Record<string, unknown> = {
     ...data,
+    statusEvents: arrayUnion({
+      status: data.status,
+      message: data.providerMessage || data.providerStatus || '',
+      at: Timestamp.now(),
+    }),
     updatedAt: Timestamp.now(),
   };
 
@@ -76,6 +82,19 @@ export async function updateFiscalInvoiceStatus(
   }
 
   await updateDoc(fiscalInvoiceDoc(uid, id), record);
+}
+
+export async function cancelFiscalInvoice(uid: string, id: string, reason: string): Promise<void> {
+  await updateDoc(fiscalInvoiceDoc(uid, id), {
+    status: 'cancelled',
+    providerMessage: reason,
+    statusEvents: arrayUnion({
+      status: 'cancelled',
+      message: reason,
+      at: Timestamp.now(),
+    }),
+    updatedAt: Timestamp.now(),
+  });
 }
 
 export async function listFiscalInvoices(uid: string): Promise<FiscalInvoice[]> {

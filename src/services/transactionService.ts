@@ -35,6 +35,10 @@ function transactionDoc(uid: string, id: string) {
   return doc(db, 'users', uid, 'transactions', id);
 }
 
+function auditLogsCol(uid: string) {
+  return collection(db, 'users', uid, 'auditLogs');
+}
+
 function toTimestamp(date: Date): Timestamp {
   return Timestamp.fromDate(date);
 }
@@ -50,14 +54,21 @@ function formDataToFirestore(
   if (data.description !== undefined) record.description = data.description;
   if (data.amount !== undefined) record.amount = data.amount;
   if (data.categoryId !== undefined) record.categoryId = data.categoryId;
+  if (data.financialAccountId !== undefined) record.financialAccountId = data.financialAccountId ?? null;
   if (data.costCenterId !== undefined) record.costCenterId = data.costCenterId;
   if (data.bankAccountId !== undefined) record.bankAccountId = data.bankAccountId;
+  if (data.contactId !== undefined) record.contactId = data.contactId ?? null;
+  if (data.contactSnapshot !== undefined) record.contactSnapshot = data.contactSnapshot ?? null;
+  if (data.documentNumber !== undefined) record.documentNumber = data.documentNumber ?? null;
   if (data.competenceDate !== undefined) record.competenceDate = toTimestamp(data.competenceDate);
   if (data.dueDate !== undefined) record.dueDate = toTimestamp(data.dueDate);
   if (data.paymentDate !== undefined) {
     record.paymentDate = data.paymentDate ? toTimestamp(data.paymentDate) : null;
   }
   if (data.status !== undefined) record.status = data.status;
+  if (data.paymentStatus !== undefined) record.paymentStatus = data.paymentStatus;
+  if (data.paidAmount !== undefined) record.paidAmount = data.paidAmount ?? 0;
+  if (data.remainingAmount !== undefined) record.remainingAmount = data.remainingAmount ?? null;
   if (data.paymentMethod !== undefined) record.paymentMethod = data.paymentMethod ?? null;
   if (data.isInstallment !== undefined) record.isInstallment = data.isInstallment;
   if (data.installmentNumber !== undefined) record.installmentNumber = data.installmentNumber ?? null;
@@ -72,12 +83,19 @@ function formDataToFirestore(
   if (data.attachmentUrl !== undefined) record.attachmentUrl = data.attachmentUrl ?? null;
   if (data.tags !== undefined) record.tags = data.tags ?? [];
   if (data.contactName !== undefined) record.contactName = data.contactName ?? null;
+  if (data.sourceModule !== undefined) record.sourceModule = data.sourceModule ?? null;
+  if (data.reconciliationId !== undefined) record.reconciliationId = data.reconciliationId ?? null;
+  if (data.chargeId !== undefined) record.chargeId = data.chargeId ?? null;
 
   record.updatedAt = Timestamp.now();
   record.uid = uid;
 
   if (isNew) {
     record.createdAt = Timestamp.now();
+    record.paymentStatus = data.paymentStatus ?? (data.status === 'paid' ? 'paid' : 'open');
+    record.paidAmount = data.status === 'paid' ? data.amount ?? 0 : data.paidAmount ?? 0;
+    record.remainingAmount =
+      data.status === 'paid' ? 0 : data.remainingAmount ?? data.amount ?? 0;
   }
 
   return record;
@@ -86,6 +104,17 @@ function formDataToFirestore(
 function docToTransaction(docSnap: DocumentSnapshot): Transaction {
   const data = docSnap.data()!;
   return { id: docSnap.id, ...data } as Transaction;
+}
+
+async function logAudit(uid: string, action: string, entityId: string, metadata?: Record<string, unknown>) {
+  await addDoc(auditLogsCol(uid), {
+    action,
+    entity: 'transaction',
+    entityId,
+    metadata: metadata || {},
+    createdAt: Timestamp.now(),
+    uid,
+  });
 }
 
 // ── Create ────────────────────────────────────────────────────────
@@ -123,10 +152,12 @@ export async function createTransaction(
     }
 
     await batch.commit();
+    await logAudit(uid, 'create_installments', groupId, { count: ids.length, amount: data.amount });
   } else {
     const record = formDataToFirestore(uid, data, true);
     const ref = await addDoc(transactionsCol(uid), record);
     ids.push(ref.id);
+    await logAudit(uid, 'create', ref.id, { type: data.type, amount: data.amount });
   }
 
   return ids;
@@ -141,12 +172,14 @@ export async function updateTransaction(
 ): Promise<void> {
   const record = formDataToFirestore(uid, data, false);
   await updateDoc(transactionDoc(uid, id), record);
+  await logAudit(uid, 'update', id, { fields: Object.keys(data) });
 }
 
 // ── Delete ────────────────────────────────────────────────────────
 
 export async function deleteTransaction(uid: string, id: string): Promise<void> {
   await deleteDoc(transactionDoc(uid, id));
+  await logAudit(uid, 'delete', id);
 }
 
 export async function deleteTransactionGroup(
@@ -165,6 +198,7 @@ export async function deleteTransactionGroup(
   });
 
   await batch.commit();
+  await logAudit(uid, 'delete_group', installmentGroupId, { count: snapshot.size });
 }
 
 // ── Read ──────────────────────────────────────────────────────────
@@ -251,12 +285,19 @@ export async function markAsPaid(
   paymentDate: Date,
   bankAccountId: string
 ): Promise<void> {
+  const transactionSnap = await getDoc(transactionDoc(uid, id));
+  const amount = transactionSnap.exists() ? (transactionSnap.data().amount as number) || 0 : 0;
+
   await updateDoc(transactionDoc(uid, id), {
     status: 'paid',
+    paymentStatus: 'paid',
+    paidAmount: amount,
+    remainingAmount: 0,
     paymentDate: toTimestamp(paymentDate),
     bankAccountId,
     updatedAt: Timestamp.now(),
   });
+  await logAudit(uid, 'mark_paid', id, { amount, bankAccountId });
 }
 
 // ── Date Range Query ──────────────────────────────────────────────
@@ -331,8 +372,14 @@ export async function bulkMarkAsPaid(
   const batch = writeBatch(db);
 
   for (const id of ids) {
+    const transactionSnap = await getDoc(transactionDoc(uid, id));
+    const amount = transactionSnap.exists() ? (transactionSnap.data().amount as number) || 0 : 0;
+
     batch.update(transactionDoc(uid, id), {
       status: 'paid',
+      paymentStatus: 'paid',
+      paidAmount: amount,
+      remainingAmount: 0,
       paymentDate: toTimestamp(paymentDate),
       bankAccountId,
       updatedAt: Timestamp.now(),
@@ -340,6 +387,7 @@ export async function bulkMarkAsPaid(
   }
 
   await batch.commit();
+  await logAudit(uid, 'bulk_mark_paid', ids.join(','), { count: ids.length, bankAccountId });
 }
 
 export async function bulkDelete(uid: string, ids: string[]): Promise<void> {
@@ -350,4 +398,5 @@ export async function bulkDelete(uid: string, ids: string[]): Promise<void> {
   }
 
   await batch.commit();
+  await logAudit(uid, 'bulk_delete', ids.join(','), { count: ids.length });
 }

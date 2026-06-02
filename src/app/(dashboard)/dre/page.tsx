@@ -84,7 +84,16 @@ export default function DREPage() {
     [monthDate]
   );
 
+  const previousPeriod = useMemo(() => {
+    const previousMonth = subMonths(monthDate, 1);
+    return {
+      startDate: startOfMonth(previousMonth),
+      endDate: endOfMonth(previousMonth),
+    };
+  }, [monthDate]);
+
   const { report, loading } = useDRE(period.startDate, period.endDate);
+  const { report: previousReport } = useDRE(previousPeriod.startDate, previousPeriod.endDate);
 
   // Month options (last 24 months)
   const monthOptions = useMemo(() => {
@@ -102,6 +111,17 @@ export default function DREPage() {
 
   const selectedMonthLabel =
     monthOptions.find((opt) => opt.value === selectedMonth)?.label ?? selectedMonth;
+
+  const horizontalAnalysis = useMemo(() => {
+    if (!report || !previousReport) return null;
+    const calc = (current: number, previous: number) =>
+      previous !== 0 ? ((current - previous) / Math.abs(previous)) * 100 : undefined;
+    return {
+      receitaLiquida: calc(report.receitaLiquida.value, previousReport.receitaLiquida.value),
+      lucroBruto: calc(report.lucroBruto.value, previousReport.lucroBruto.value),
+      lucroLiquido: calc(report.lucroLiquido.value, previousReport.lucroLiquido.value),
+    };
+  }, [previousReport, report]);
 
   const exportRows = useMemo(() => {
     if (!report) return [] as Array<{ item: string; valor: number; percentual?: number }>;
@@ -315,6 +335,35 @@ export default function DREPage() {
         </CardContent>
       </Card>
 
+      {horizontalAnalysis && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground">Receita líquida vs mês anterior</div>
+              <div className={cn('text-2xl font-bold', (horizontalAnalysis.receitaLiquida || 0) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                {horizontalAnalysis.receitaLiquida !== undefined ? `${horizontalAnalysis.receitaLiquida.toFixed(1)}%` : '-'}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground">Lucro bruto vs mês anterior</div>
+              <div className={cn('text-2xl font-bold', (horizontalAnalysis.lucroBruto || 0) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                {horizontalAnalysis.lucroBruto !== undefined ? `${horizontalAnalysis.lucroBruto.toFixed(1)}%` : '-'}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm text-muted-foreground">Lucro líquido vs mês anterior</div>
+              <div className={cn('text-2xl font-bold', (horizontalAnalysis.lucroLiquido || 0) >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                {horizontalAnalysis.lucroLiquido !== undefined ? `${horizontalAnalysis.lucroLiquido.toFixed(1)}%` : '-'}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {report && (
         <Card>
           <CardHeader className="text-center border-b">
@@ -389,4 +438,3 @@ export default function DREPage() {
     </div>
   );
 }
-

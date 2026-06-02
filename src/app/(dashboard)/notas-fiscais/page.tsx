@@ -29,8 +29,9 @@ import { KpiCard } from '@/components/dashboard/KpiCard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useAuth } from '@/hooks/useAuth';
 import { useFiscalInvoices } from '@/hooks/useFiscalInvoices';
+import { buildContactSnapshot, listContacts, listServices, saveContact } from '@/services/erpService';
 import { getTransactionsByDateRange } from '@/services/transactionService';
-import { FiscalInvoiceFormData, FiscalInvoiceStatus, Transaction } from '@/types';
+import { Contact, FiscalInvoiceFormData, FiscalInvoiceStatus, ServiceCatalogItem, Transaction } from '@/types';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 
 const initialForm: FiscalInvoiceFormData = {
@@ -81,21 +82,31 @@ function statusClass(status: FiscalInvoiceStatus) {
 
 export default function NotasFiscaisPage() {
   const { companyUid } = useAuth();
-  const { invoices, loading, issuing, issueInvoice, consultInvoice } = useFiscalInvoices();
+  const { invoices, loading, issuing, issueInvoice, consultInvoice, cancelInvoice } = useFiscalInvoices();
   const [receivables, setReceivables] = useState<Transaction[]>([]);
+  const [customers, setCustomers] = useState<Contact[]>([]);
+  const [services, setServices] = useState<ServiceCatalogItem[]>([]);
   const [selectedTransactionId, setSelectedTransactionId] = useState('manual');
+  const [selectedCustomerId, setSelectedCustomerId] = useState('manual');
+  const [selectedServiceId, setSelectedServiceId] = useState('manual');
   const [form, setForm] = useState<FiscalInvoiceFormData>(initialForm);
 
   useEffect(() => {
     if (!companyUid) return;
 
-    getTransactionsByDateRange(companyUid, new Date(2020, 0, 1), new Date(2030, 11, 31))
-      .then((data) =>
+    Promise.all([
+      getTransactionsByDateRange(companyUid, new Date(2020, 0, 1), new Date(2030, 11, 31)),
+      listContacts(companyUid, 'customer'),
+      listServices(companyUid),
+    ])
+      .then(([data, customerData, serviceData]) => {
         setReceivables(
           data.filter((item) => item.type === 'income' && item.status !== 'cancelled')
-        )
-      )
-      .catch(() => toast.error('Erro ao carregar recebíveis para nota fiscal.'));
+        );
+        setCustomers(customerData);
+        setServices(serviceData.filter((service) => service.isActive));
+      })
+      .catch(() => toast.error('Erro ao carregar dados para nota fiscal.'));
   }, [companyUid]);
 
   const totals = useMemo(() => {
@@ -174,6 +185,99 @@ export default function NotasFiscaisPage() {
     }));
   };
 
+  const handleCustomerChange = (id: string | null) => {
+    if (!id) return;
+    setSelectedCustomerId(id);
+    if (id === 'manual') return;
+    const customer = customers.find((item) => item.id === id);
+    if (!customer) return;
+
+    setForm((current) => ({
+      ...current,
+      customerId: customer.id,
+      customerSnapshot: buildContactSnapshot(customer),
+      customer: {
+        name: customer.name,
+        document: customer.document || '',
+        email: customer.email || '',
+        phone: customer.phone || customer.mobile || '',
+        address: {
+          street: customer.address?.street || '',
+          number: customer.address?.number || '',
+          complement: customer.address?.complement || '',
+          district: customer.address?.district || '',
+          cityCode: customer.address?.cityCode || '',
+          city: customer.address?.city || '',
+          state: customer.address?.state || '',
+          zipCode: customer.address?.zipCode || '',
+        },
+      },
+    }));
+  };
+
+  const handleServiceChange = (id: string | null) => {
+    if (!id) return;
+    setSelectedServiceId(id);
+    if (id === 'manual') return;
+    const service = services.find((item) => item.id === id);
+    if (!service) return;
+
+    setForm((current) => ({
+      ...current,
+      serviceId: service.id,
+      serviceSnapshot: {
+        id: service.id,
+        description: service.description,
+        serviceListItem: service.serviceListItem,
+        municipalServiceCode: service.municipalServiceCode,
+        taxRate: service.taxRate,
+        issWithheld: service.issWithheld,
+        defaultAmount: service.defaultAmount,
+      },
+      service: {
+        ...current.service,
+        description: service.description,
+        serviceListItem: service.serviceListItem,
+        municipalServiceCode: service.municipalServiceCode || '',
+        taxRate: service.taxRate,
+        issWithheld: service.issWithheld,
+        amount: service.defaultAmount || current.service.amount,
+      },
+    }));
+  };
+
+  const handleSaveCustomer = async () => {
+    if (!companyUid) return;
+    if (!form.customer.name.trim() || !form.customer.document.trim()) {
+      toast.error('Informe nome e CPF/CNPJ antes de cadastrar o cliente.');
+      return;
+    }
+    try {
+      const id = await saveContact(companyUid, {
+        type: 'customer',
+        name: form.customer.name,
+        document: form.customer.document,
+        email: form.customer.email,
+        phone: form.customer.phone,
+        address: form.customer.address,
+        blocked: false,
+        creditLimit: 0,
+      });
+      const customerData = await listContacts(companyUid, 'customer');
+      setCustomers(customerData);
+      setSelectedCustomerId(id);
+      const customer = customerData.find((item) => item.id === id);
+      setForm((current) => ({
+        ...current,
+        customerId: id,
+        customerSnapshot: customer ? buildContactSnapshot(customer) : undefined,
+      }));
+      toast.success('Cliente cadastrado e vinculado à nota.');
+    } catch {
+      toast.error('Erro ao cadastrar cliente.');
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.customer.name.trim() || !form.customer.document.trim()) {
@@ -239,6 +343,23 @@ export default function NotasFiscaisPage() {
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <Label>Cliente cadastrado</Label>
+                <Select value={selectedCustomerId} onValueChange={handleCustomerChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">Preenchimento manual</SelectItem>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name} {customer.document ? `- ${customer.document}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Tomador</Label>
@@ -257,6 +378,9 @@ export default function NotasFiscaisPage() {
                   <Input value={form.customer.phone} onChange={(e) => patchCustomer('phone', e.target.value)} />
                 </div>
               </div>
+              <Button type="button" variant="outline" onClick={handleSaveCustomer}>
+                Salvar tomador como cliente
+              </Button>
 
               <div className="grid gap-3 sm:grid-cols-6">
                 <div className="space-y-2 sm:col-span-4">
@@ -301,6 +425,23 @@ export default function NotasFiscaisPage() {
               <CardDescription>Confirme os códigos fiscais com a contabilidade antes da primeira emissão real.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Serviço cadastrado</Label>
+                <Select value={selectedServiceId} onValueChange={handleServiceChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um serviço" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">Preenchimento manual</SelectItem>
+                    {services.map((service) => (
+                      <SelectItem key={service.id} value={service.id}>
+                        {service.description} - {formatCurrency(service.defaultAmount)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label>Discriminação do serviço</Label>
                 <Textarea
@@ -397,6 +538,11 @@ export default function NotasFiscaisPage() {
                             >
                               PDF
                             </a>
+                          )}
+                          {invoice.status !== 'cancelled' && (
+                            <Button variant="outline" size="sm" onClick={() => cancelInvoice(invoice)}>
+                              Cancelar
+                            </Button>
                           )}
                         </div>
                       </TableCell>

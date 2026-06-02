@@ -1,0 +1,96 @@
+STATUS DO ERP FINANCEIRO ROBUSTO
+
+Como usar este arquivo
+- Manter este checklist atualizado a cada ciclo.
+- Marcar [x] quando concluido e validado com lint/build.
+- Marcar [~] quando existe base implementada, mas ainda falta profundidade.
+- Marcar [ ] quando ainda precisa implementar.
+
+Feito ate agora
+[x] Plano principal criado em PLANO_FINANCEIRO_MARKETUP.txt.
+[x] Tipos do ERP financeiro adicionados: contatos, servicos, contas gerenciais, baixas, cobrancas e conciliacao.
+[x] Firestore rules liberadas para novas colecoes.
+[x] Servico Firebase central criado em src/services/erpService.ts.
+[x] Cadastro de clientes.
+[x] Cadastro de fornecedores.
+[x] Cadastro de servicos.
+[x] Cadastro de contas gerenciais.
+[x] Cobrancas manuais/mock.
+[x] Conciliacao bancaria com importacao OFX.
+[x] Contas pagas.
+[x] Contas recebidas.
+[x] Baixa parcial em contas a pagar e receber com juros, desconto, data, conta e forma de pagamento.
+[x] NFS-e preenchendo dados por cliente e servico cadastrados.
+[x] Sidebar com novos modulos financeiros.
+[x] AuthProvider nao quebra mais a landing page quando Firebase local nao esta configurado.
+[x] npm run lint passou.
+[x] npm run build passou.
+[x] Browser verification da landing page passou sem erro de console.
+[x] Lancamentos agora selecionam cliente/fornecedor cadastrado e conta gerencial.
+[x] Relatorios receberam abas de contas gerenciais, clientes/fornecedores, cobrancas e conciliacao.
+[x] DRE passou a usar contas gerenciais/classificacao DRE com fallback para categorias antigas.
+[x] Fluxo de caixa passou a separar realizado e previsto considerando baixas parciais.
+[x] Cobrancas podem ser geradas a partir de contas a receber e gravam vinculo no lancamento.
+[x] Status de cobranca vencida e atualizado automaticamente ao listar/salvar.
+[x] Conciliacao cria lancamento a partir de item OFX.
+[x] Conciliacao permite desfazer conciliacao e apagar lancamento criado pela conciliacao.
+[x] Historico de importacoes OFX criado.
+[x] Recibo PDF gerado ao registrar baixa.
+[x] Relatorio financeiro gerencial consolidado exporta dados novos em PDF/Excel.
+[x] DRE possui analise vertical por percentual da receita e analise horizontal vs mes anterior.
+[x] Fluxo de caixa projeta saldo futuro por conta bancaria e consolidado.
+[x] Conciliacao melhorou sugestao por texto/data/valor.
+[x] NFS-e registra customerId, serviceId, snapshots e eventos de status.
+[x] Cancelamento interno de NFS-e criado.
+[x] Regras do Firestore restringem providerSettings e leitura de auditLogs ao admin.
+[x] Dashboard executivo recebeu KPIs de clientes, cobrancas e conciliacao.
+[x] Base de adapters de pagamento criada para manual/mock/PIX/boleto/TEF.
+[x] Ponto de extensao CNAB criado com bloqueio explicito ate existir layout bancario real.
+[x] Filtros operacionais adicionados em cobrancas e conciliacao.
+[x] npm run lint passou apos checklist final.
+[x] npm run build passou apos checklist final.
+
+Em andamento
+[x] Checklist funcional concluido.
+
+Ainda falta implementar
+[x] Ficha completa do cliente com historico de lancamentos, contas abertas, notas fiscais e cobrancas.
+[x] Validar bloqueio e limite de credito do cliente ao criar recebiveis/cobrancas.
+[x] Gerar cobranca a partir de uma conta a receber e gravar chargeId no lancamento.
+[x] Status automatico de cobranca vencida.
+[x] Recibo PDF de baixa/pagamento/recebimento.
+[x] Relatorios avancados: pagar/pagas, receber/recebidas, cobrancas, conciliacao, clientes, fornecedores e centros de custo.
+[x] Exportacao PDF/Excel para todos os relatorios novos.
+[x] DRE gerencial usando contas gerenciais e classificacao DRE.
+[x] Analise vertical e horizontal no DRE.
+[x] Fluxo de caixa realizado vs previsto usando baixas parciais.
+[x] Projecao de saldo futuro por conta bancaria e consolidado.
+[x] Conciliação: criar lancamento a partir de item OFX.
+[x] Conciliação: desfazer conciliacao.
+[x] Conciliação: melhorar sugestao por texto/data/valor.
+[x] Historico de importacoes OFX.
+[x] Preparar CNAB por layout bancario real.
+[x] Cadastro rapido de cliente dentro da emissao de NFS-e.
+[x] Salvar customerId/serviceId e snapshots estruturados na NFS-e.
+[x] Historico de eventos da NFS-e e cancelamento mais completo.
+[x] Audit logs para criar, editar, baixar, conciliar, cancelar e excluir.
+[x] Permissoes mais granulares por perfil.
+[x] Paginação e filtros avancados nas novas telas.
+[x] Dashboard financeiro executivo com KPIs do novo ERP.
+[x] Adapters reais futuros para PIX, boleto, TEF e bancos quando houver credenciais.
+
+Ordem recomendada de execucao
+1. Integrar lancamentos com clientes/fornecedores e contas gerenciais.
+2. Fazer DRE e relatorios lerem contas gerenciais.
+3. Melhorar fluxo de caixa com realizado vs previsto e baixas parciais.
+4. Completar cobrancas vinculadas a contas a receber.
+5. Completar conciliacao OFX com criacao/desfazer.
+6. Criar recibos e exportacoes.
+7. Adicionar auditoria e permissoes.
+
+Hardening pos-checklist funcional
+[x] Criar tela de Auditoria para admin consultar auditLogs.
+[x] Criar tela de configuracao/preparacao de provedores financeiros.
+[x] Criar modulo Notas Recebidas como preparacao para entrada fiscal futura.
+[x] Melhorar filtros de contas pagas e recebidas.
+[x] Revalidar lint/build apos hardening.

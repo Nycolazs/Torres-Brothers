@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -19,11 +19,22 @@ import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
 import { useBankAccounts } from '@/hooks/useBankAccounts';
-import { Transaction, TransactionType, TransactionStatus, TransactionFormData, ReportFilters } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
+import { buildContactSnapshot, listContacts, listFinancialAccounts } from '@/services/erpService';
+import {
+  Contact,
+  FinancialAccount,
+  Transaction,
+  TransactionType,
+  TransactionStatus,
+  TransactionFormData,
+  ReportFilters,
+} from '@/types';
 import { ITEMS_PER_PAGE_OPTIONS } from '@/constants';
 import { startOfYear, endOfYear } from 'date-fns';
 
 export default function LancamentosPage() {
+  const { companyUid } = useAuth();
   // Filter state
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'all'>('all');
@@ -66,6 +77,19 @@ export default function LancamentosPage() {
 
   const { categories } = useCategories();
   const { accounts: bankAccounts } = useBankAccounts();
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [financialAccounts, setFinancialAccounts] = useState<FinancialAccount[]>([]);
+
+  useEffect(() => {
+    if (!companyUid) return;
+
+    Promise.all([listContacts(companyUid), listFinancialAccounts(companyUid)])
+      .then(([contactData, financialAccountData]) => {
+        setContacts(contactData);
+        setFinancialAccounts(financialAccountData);
+      })
+      .catch(() => toast.error('Erro ao carregar cadastros financeiros.'));
+  }, [companyUid]);
 
   // Filter by search locally
   const filteredTransactions = useMemo(() => {
@@ -74,6 +98,7 @@ export default function LancamentosPage() {
     return transactions.filter(
       (t) =>
         t.description.toLowerCase().includes(term) ||
+        t.contactSnapshot?.name?.toLowerCase().includes(term) ||
         t.contactName?.toLowerCase().includes(term) ||
         t.tags?.some((tag) => tag.toLowerCase().includes(term))
     );
@@ -101,10 +126,36 @@ export default function LancamentosPage() {
   };
 
   const handleSubmit = async (data: TransactionFormData) => {
+    const selectedContact = contacts.find((contact) => contact.id === data.contactId);
+    if (data.type === 'income' && selectedContact?.blocked) {
+      toast.error('Cliente bloqueado. Não é possível criar novo recebível.');
+      return;
+    }
+    if (data.type === 'income' && selectedContact?.creditLimit) {
+      const openAmount = transactions
+        .filter((transaction) =>
+          transaction.id !== editingTransaction?.id &&
+          transaction.contactId === selectedContact.id &&
+          transaction.status !== 'paid' &&
+          transaction.status !== 'cancelled'
+        )
+        .reduce((sum, transaction) => sum + (transaction.remainingAmount ?? transaction.amount), 0);
+      const nextOpenAmount = openAmount + data.amount;
+      if (nextOpenAmount > selectedContact.creditLimit) {
+        toast.error('Limite de crédito do cliente excedido.');
+        return;
+      }
+    }
+    const payload: TransactionFormData = {
+      ...data,
+      contactSnapshot: selectedContact ? buildContactSnapshot(selectedContact) : data.contactSnapshot,
+      contactName: selectedContact?.name || data.contactName,
+    };
+
     if (editingTransaction) {
-      await updateTransaction(editingTransaction.id, data);
+      await updateTransaction(editingTransaction.id, payload);
     } else {
-      await createTransaction(data);
+      await createTransaction(payload);
     }
   };
 
@@ -248,6 +299,8 @@ export default function LancamentosPage() {
         transaction={editingTransaction}
         categories={categories}
         bankAccounts={bankAccounts}
+        contacts={contacts}
+        financialAccounts={financialAccounts}
         onSubmit={handleSubmit}
       />
 

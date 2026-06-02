@@ -13,6 +13,13 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
@@ -25,6 +32,7 @@ import {
 import { ChartSkeleton, TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { DateRangePicker } from '@/components/shared/DateRangePicker';
 import { useAuth } from '@/hooks/useAuth';
+import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { getTransactionsByDateRange } from '@/services/transactionService';
 import { Transaction } from '@/types';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -44,9 +52,11 @@ import { ptBR } from 'date-fns/locale';
 
 export default function FluxoCaixaPage() {
   const { companyUid } = useAuth();
+  const { accounts } = useBankAccounts();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [regime, setRegime] = useState<'cash' | 'accrual'>('cash');
+  const [bankAccountId, setBankAccountId] = useState('all');
   const [dateFrom, setDateFrom] = useState<Date>(startOfMonth(subMonths(new Date(), 5)));
   const [dateTo, setDateTo] = useState<Date>(endOfMonth(addMonths(new Date(), 2)));
 
@@ -82,26 +92,43 @@ export default function FluxoCaixaPage() {
   // Monthly view data
   const monthlyData = useMemo(() => {
     const months = eachMonthOfInterval({ start: dateFrom, end: dateTo });
+    const scopedTransactions = transactions.filter((transaction) =>
+      bankAccountId === 'all' ? true : transaction.bankAccountId === bankAccountId
+    );
     return months.reduce<Array<{
       month: string;
       entradas: number;
       saidas: number;
+      entradasPrevistas: number;
+      saidasPrevistas: number;
       saldo: number;
+      previsto: number;
       acumulado: number;
     }>>((rows, month) => {
       let income = 0;
       let expenses = 0;
+      let projectedIncome = 0;
+      let projectedExpenses = 0;
 
-      for (const t of transactions) {
+      for (const t of scopedTransactions) {
         if (t.status === 'cancelled') continue;
         const date = getTransactionDate(t);
         if (!isSameMonth(date, month)) continue;
 
-        if (t.type === 'income') income += t.amount;
-        else expenses += t.amount;
+        const realizedAmount = t.status === 'paid' ? t.amount : t.paidAmount || 0;
+        const openAmount = t.status === 'paid' ? 0 : t.remainingAmount ?? t.amount;
+
+        if (t.type === 'income') {
+          income += realizedAmount;
+          projectedIncome += openAmount;
+        } else {
+          expenses += realizedAmount;
+          projectedExpenses += openAmount;
+        }
       }
 
       const balance = income - expenses;
+      const projectedBalance = projectedIncome - projectedExpenses;
       const accumulated = (rows[rows.length - 1]?.acumulado || 0) + balance;
 
       return [
@@ -110,35 +137,47 @@ export default function FluxoCaixaPage() {
           month: format(month, 'MMM/yy', { locale: ptBR }),
           entradas: income,
           saidas: expenses,
+          entradasPrevistas: projectedIncome,
+          saidasPrevistas: projectedExpenses,
           saldo: balance,
+          previsto: projectedBalance,
           acumulado: accumulated,
         },
       ];
     }, []);
-  }, [dateFrom, dateTo, getTransactionDate, transactions]);
+  }, [bankAccountId, dateFrom, dateTo, getTransactionDate, transactions]);
 
   // Projection data for chart (next 90 days)
   const projectionData = useMemo(() => {
     const now = new Date();
     const end = addDays(now, 90);
     const days = eachDayOfInterval({ start: now, end });
-    const initialBalance = transactions.reduce((total, transaction) => {
+    const scopedTransactions = transactions.filter((transaction) =>
+      bankAccountId === 'all' ? true : transaction.bankAccountId === bankAccountId
+    );
+    const accountInitialBalance =
+      bankAccountId === 'all'
+        ? accounts.reduce((sum, account) => sum + account.initialBalance, 0)
+        : accounts.find((account) => account.id === bankAccountId)?.initialBalance || 0;
+    const initialBalance = scopedTransactions.reduce((total, transaction) => {
       if (transaction.status !== 'paid') return total;
 
       const date = getTransactionDate(transaction);
       if (date > now) return total;
 
-      return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
-    }, 0);
+      const realizedAmount = transaction.paidAmount || transaction.amount;
+      return total + (transaction.type === 'income' ? realizedAmount : -realizedAmount);
+    }, accountInitialBalance);
 
     return days.reduce<Array<{ date: string; saldo: number }>>((rows, day) => {
-      const balanceDelta = transactions.reduce((total, transaction) => {
+      const balanceDelta = scopedTransactions.reduce((total, transaction) => {
         if (transaction.status === 'cancelled') return total;
 
         const date = transaction.dueDate.toDate();
         if (!isSameDay(date, day)) return total;
 
-        return total + (transaction.type === 'income' ? transaction.amount : -transaction.amount);
+        const openAmount = transaction.status === 'paid' ? 0 : transaction.remainingAmount ?? transaction.amount;
+        return total + (transaction.type === 'income' ? openAmount : -openAmount);
       }, 0);
 
       const previousBalance = rows[rows.length - 1]?.saldo ?? initialBalance;
@@ -152,7 +191,7 @@ export default function FluxoCaixaPage() {
         },
       ];
     }, []);
-  }, [getTransactionDate, transactions]);
+  }, [accounts, bankAccountId, getTransactionDate, transactions]);
 
   return (
     <div className="space-y-6">
@@ -180,6 +219,17 @@ export default function FluxoCaixaPage() {
               Competência
             </Button>
           </div>
+          <Select value={bankAccountId} onValueChange={(value) => value && setBankAccountId(value)}>
+            <SelectTrigger className="w-[190px]">
+              <SelectValue placeholder="Conta" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Consolidado</SelectItem>
+              {accounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <DateRangePicker
             from={dateFrom}
             to={dateTo}
@@ -210,6 +260,7 @@ export default function FluxoCaixaPage() {
                         <TableHead>Mês</TableHead>
                         <TableHead className="text-right">Entradas</TableHead>
                         <TableHead className="text-right">Saídas</TableHead>
+                        <TableHead className="text-right">Previsto</TableHead>
                         <TableHead className="text-right">Saldo do Período</TableHead>
                         <TableHead className="text-right">Saldo Acumulado</TableHead>
                       </TableRow>
@@ -223,6 +274,15 @@ export default function FluxoCaixaPage() {
                           </TableCell>
                           <TableCell className="text-right text-red-600 tabular-nums">
                             {formatCurrency(row.saidas)}
+                          </TableCell>
+                          <TableCell
+                            className={cn(
+                              'text-right font-semibold tabular-nums',
+                              row.previsto >= 0 ? 'text-emerald-600' : 'text-red-600'
+                            )}
+                            title={`Entradas previstas: ${formatCurrency(row.entradasPrevistas)} | Saídas previstas: ${formatCurrency(row.saidasPrevistas)}`}
+                          >
+                            {formatCurrency(row.previsto)}
                           </TableCell>
                           <TableCell
                             className={cn(

@@ -21,7 +21,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCategories } from '@/hooks/useCategories';
 import { useBankAccounts } from '@/hooks/useBankAccounts';
 import { getTransactionsByDateRange } from '@/services/transactionService';
-import { Transaction } from '@/types';
+import { listBankStatementItems, listCharges, listContacts, listFinancialAccounts } from '@/services/erpService';
+import { BankStatementItem, Charge, Contact, FinancialAccount, Transaction } from '@/types';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import { startOfMonth, endOfMonth, isBefore, differenceInDays } from 'date-fns';
 import { TRANSACTION_TYPE_LABELS, TRANSACTION_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '@/constants';
@@ -31,6 +32,10 @@ export default function RelatoriosPage() {
   const { categories } = useCategories();
   const { accounts } = useBankAccounts();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [financialAccounts, setFinancialAccounts] = useState<FinancialAccount[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [charges, setCharges] = useState<Charge[]>([]);
+  const [statementItems, setStatementItems] = useState<BankStatementItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState<Date>(startOfMonth(new Date()));
   const [dateTo, setDateTo] = useState<Date>(endOfMonth(new Date()));
@@ -42,8 +47,18 @@ export default function RelatoriosPage() {
     async function loadTransactions(activeUid: string) {
       setLoading(true);
       try {
-        const data = await getTransactionsByDateRange(activeUid, dateFrom, dateTo);
+        const [data, financialAccountData, contactData, chargeData, statementData] = await Promise.all([
+          getTransactionsByDateRange(activeUid, dateFrom, dateTo),
+          listFinancialAccounts(activeUid),
+          listContacts(activeUid),
+          listCharges(activeUid),
+          listBankStatementItems(activeUid),
+        ]);
         setTransactions(data);
+        setFinancialAccounts(financialAccountData);
+        setContacts(contactData);
+        setCharges(chargeData);
+        setStatementItems(statementData);
       } catch {
         toast.error('Erro ao carregar relatórios.');
       } finally {
@@ -55,7 +70,9 @@ export default function RelatoriosPage() {
   }, [companyUid, dateFrom, dateTo]);
 
   const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+  const financialAccountMap = useMemo(() => new Map(financialAccounts.map((c) => [c.id, c])), [financialAccounts]);
   const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+  const contactMap = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts]);
 
   // Category Report
   const categoryReport = useMemo(() => {
@@ -71,6 +88,48 @@ export default function RelatoriosPage() {
     }
     return Object.values(totals).sort((a, b) => (b.income + b.expense) - (a.income + a.expense));
   }, [transactions, categoryMap]);
+
+  const financialAccountReport = useMemo(() => {
+    const totals: Record<string, { name: string; income: number; expense: number; dre: string }> = {};
+    for (const t of transactions) {
+      if (t.status === 'cancelled') continue;
+      const account = t.financialAccountId ? financialAccountMap.get(t.financialAccountId) : undefined;
+      const name = account?.name || 'Sem conta gerencial';
+      if (!totals[name]) totals[name] = { name, income: 0, expense: 0, dre: account?.dreClassification || 'none' };
+      if (t.type === 'income') totals[name].income += t.amount;
+      else totals[name].expense += t.amount;
+    }
+    return Object.values(totals).sort((a, b) => (b.income + b.expense) - (a.income + a.expense));
+  }, [transactions, financialAccountMap]);
+
+  const contactsReport = useMemo(() => {
+    const totals: Record<string, { name: string; type: string; income: number; expense: number; open: number; paid: number }> = {};
+    for (const t of transactions) {
+      if (t.status === 'cancelled') continue;
+      const contact = t.contactId ? contactMap.get(t.contactId) : undefined;
+      const name = contact?.name || t.contactSnapshot?.name || t.contactName || 'Sem cadastro';
+      if (!totals[name]) totals[name] = { name, type: contact?.type || '-', income: 0, expense: 0, open: 0, paid: 0 };
+      if (t.type === 'income') totals[name].income += t.amount;
+      else totals[name].expense += t.amount;
+      if (t.status === 'paid') totals[name].paid += t.amount;
+      else totals[name].open += t.amount;
+    }
+    return Object.values(totals).sort((a, b) => (b.income + b.expense) - (a.income + a.expense));
+  }, [transactions, contactMap]);
+
+  const chargeReport = useMemo(() => {
+    return charges.filter((charge) => {
+      const dueDate = charge.dueDate.toDate();
+      return dueDate >= dateFrom && dueDate <= dateTo;
+    });
+  }, [charges, dateFrom, dateTo]);
+
+  const reconciliationReport = useMemo(() => {
+    return statementItems.filter((item) => {
+      const date = item.date.toDate();
+      return date >= dateFrom && date <= dateTo;
+    });
+  }, [statementItems, dateFrom, dateTo]);
 
   // Bank Statement
   const bankStatement = useMemo(() => {
@@ -137,6 +196,55 @@ export default function RelatoriosPage() {
     { header: 'Contato', key: 'contato' },
   ];
 
+  const consolidatedExportData = [
+    ...financialAccountReport.map((row) => ({
+      relatorio: 'Contas Gerenciais',
+      item: row.name,
+      detalhe: row.dre,
+      status: '',
+      receita: row.income,
+      despesa: row.expense,
+      saldo: row.income - row.expense,
+    })),
+    ...contactsReport.map((row) => ({
+      relatorio: 'Clientes/Fornecedores',
+      item: row.name,
+      detalhe: row.type,
+      status: '',
+      receita: row.income,
+      despesa: row.expense,
+      saldo: row.income - row.expense,
+    })),
+    ...chargeReport.map((charge) => ({
+      relatorio: 'Cobranças',
+      item: charge.description,
+      detalhe: charge.contactSnapshot?.name || '',
+      status: charge.status,
+      receita: charge.amount,
+      despesa: 0,
+      saldo: charge.amount,
+    })),
+    ...reconciliationReport.map((item) => ({
+      relatorio: 'Conciliação',
+      item: item.description,
+      detalhe: formatDate(item.date),
+      status: item.status,
+      receita: item.amount > 0 ? item.amount : 0,
+      despesa: item.amount < 0 ? Math.abs(item.amount) : 0,
+      saldo: item.amount,
+    })),
+  ];
+
+  const consolidatedColumns = [
+    { header: 'Relatório', key: 'relatorio' },
+    { header: 'Item', key: 'item' },
+    { header: 'Detalhe', key: 'detalhe' },
+    { header: 'Status', key: 'status' },
+    { header: 'Receita', key: 'receita' },
+    { header: 'Despesa', key: 'despesa' },
+    { header: 'Saldo', key: 'saldo' },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -159,12 +267,22 @@ export default function RelatoriosPage() {
             filename="relatorio-lancamentos"
             title="Relatório de Lançamentos"
           />
+          <ExportButton
+            data={consolidatedExportData as Record<string, unknown>[]}
+            columns={consolidatedColumns}
+            filename="relatorio-financeiro-gerencial"
+            title="Relatório Financeiro Gerencial"
+          />
         </div>
       </div>
 
       <Tabs defaultValue="categories">
         <TabsList className="flex-wrap">
           <TabsTrigger value="categories">Por Categoria</TabsTrigger>
+          <TabsTrigger value="financial">Contas Gerenciais</TabsTrigger>
+          <TabsTrigger value="contacts">Clientes/Fornecedores</TabsTrigger>
+          <TabsTrigger value="charges">Cobranças</TabsTrigger>
+          <TabsTrigger value="reconciliation">Conciliação</TabsTrigger>
           <TabsTrigger value="bank">Extrato Bancário</TabsTrigger>
           <TabsTrigger value="aging">Inadimplência</TabsTrigger>
           <TabsTrigger value="ledger">Lançamentos</TabsTrigger>
@@ -205,6 +323,152 @@ export default function RelatoriosPage() {
                         </TableCell>
                         <TableCell className={cn('text-right font-semibold tabular-nums', row.income - row.expense >= 0 ? 'text-emerald-600' : 'text-red-600')}>
                           {formatCurrency(row.income - row.expense)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="financial" className="mt-4">
+          {loading ? (
+            <TableSkeleton />
+          ) : financialAccountReport.length === 0 ? (
+            <EmptyState icon={BarChart3} title="Sem contas gerenciais" description="Vincule contas gerenciais aos lançamentos para ver este relatório." />
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Conta gerencial</TableHead>
+                      <TableHead>DRE</TableHead>
+                      <TableHead className="text-right">Receitas</TableHead>
+                      <TableHead className="text-right">Despesas</TableHead>
+                      <TableHead className="text-right">Saldo</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {financialAccountReport.map((row) => (
+                      <TableRow key={row.name}>
+                        <TableCell className="font-medium">{row.name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{row.dre}</TableCell>
+                        <TableCell className="text-right text-emerald-600 tabular-nums">{formatCurrency(row.income)}</TableCell>
+                        <TableCell className="text-right text-red-600 tabular-nums">{formatCurrency(row.expense)}</TableCell>
+                        <TableCell className={cn('text-right font-semibold tabular-nums', row.income - row.expense >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                          {formatCurrency(row.income - row.expense)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="contacts" className="mt-4">
+          {loading ? (
+            <TableSkeleton />
+          ) : contactsReport.length === 0 ? (
+            <EmptyState icon={Receipt} title="Sem contatos no período" description="Lançamentos vinculados a clientes ou fornecedores aparecerão aqui." />
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Cliente/Fornecedor</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead className="text-right">Receitas</TableHead>
+                      <TableHead className="text-right">Despesas</TableHead>
+                      <TableHead className="text-right">Aberto</TableHead>
+                      <TableHead className="text-right">Liquidado</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contactsReport.map((row) => (
+                      <TableRow key={row.name}>
+                        <TableCell className="font-medium">{row.name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{row.type}</TableCell>
+                        <TableCell className="text-right text-emerald-600 tabular-nums">{formatCurrency(row.income)}</TableCell>
+                        <TableCell className="text-right text-red-600 tabular-nums">{formatCurrency(row.expense)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatCurrency(row.open)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatCurrency(row.paid)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="charges" className="mt-4">
+          {loading ? (
+            <TableSkeleton />
+          ) : chargeReport.length === 0 ? (
+            <EmptyState icon={Receipt} title="Sem cobranças" description="Cobranças emitidas no período aparecerão aqui." />
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Método</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {chargeReport.map((charge) => (
+                      <TableRow key={charge.id}>
+                        <TableCell>{formatDate(charge.dueDate)}</TableCell>
+                        <TableCell className="font-medium">{charge.description}</TableCell>
+                        <TableCell>{charge.contactSnapshot?.name || '-'}</TableCell>
+                        <TableCell>{charge.method}</TableCell>
+                        <TableCell>{charge.status}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatCurrency(charge.amount)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="reconciliation" className="mt-4">
+          {loading ? (
+            <TableSkeleton />
+          ) : reconciliationReport.length === 0 ? (
+            <EmptyState icon={Landmark} title="Sem conciliação" description="Itens OFX importados no período aparecerão aqui." />
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Data</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reconciliationReport.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{formatDate(item.date)}</TableCell>
+                        <TableCell className="font-medium">{item.description}</TableCell>
+                        <TableCell>{item.status}</TableCell>
+                        <TableCell className={cn('text-right tabular-nums', item.amount >= 0 ? 'text-emerald-600' : 'text-red-600')}>
+                          {formatCurrency(item.amount)}
                         </TableCell>
                       </TableRow>
                     ))}

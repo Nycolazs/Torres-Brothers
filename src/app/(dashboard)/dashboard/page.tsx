@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import {
   TrendingUp,
@@ -9,6 +9,9 @@ import {
   Wallet,
   AlertTriangle,
   BarChart3,
+  ReceiptText,
+  Users,
+  GitCompareArrows,
 } from 'lucide-react';
 import {
   Select,
@@ -22,6 +25,8 @@ import { RecentTransactions } from '@/components/dashboard/RecentTransactions';
 import { KpiCardSkeleton, ChartSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useTransactionsSummary, useRecentTransactions } from '@/hooks/useTransactions';
 import { useCashFlowChart, useExpenseBreakdown } from '@/hooks/useCashFlow';
+import { useAuth } from '@/hooks/useAuth';
+import { listBankStatementItems, listCharges, listContacts } from '@/services/erpService';
 import { getDateRange, calculatePercentageChange } from '@/lib/utils';
 import { PERIOD_OPTIONS } from '@/constants';
 
@@ -39,7 +44,14 @@ const ExpenseBreakdownChart = dynamic(
 );
 
 export default function DashboardPage() {
+  const { companyUid } = useAuth();
   const [period, setPeriod] = useState('this_month');
+  const [erpKpis, setErpKpis] = useState({
+    customers: 0,
+    openCharges: 0,
+    overdueCharges: 0,
+    pendingReconciliation: 0,
+  });
   const selectedPeriodLabel =
     PERIOD_OPTIONS.find((option) => option.value === period)?.label ?? 'Período';
 
@@ -67,6 +79,24 @@ export default function DashboardPage() {
     dateRange.end
   );
   const { transactions: recentTx, loading: recentLoading } = useRecentTransactions(5);
+
+  useEffect(() => {
+    if (!companyUid) return;
+    Promise.all([
+      listContacts(companyUid, 'customer'),
+      listCharges(companyUid),
+      listBankStatementItems(companyUid),
+    ]).then(([contacts, charges, statementItems]) => {
+      setErpKpis({
+        customers: contacts.length,
+        openCharges: charges.filter((charge) => charge.status === 'draft' || charge.status === 'sent').length,
+        overdueCharges: charges.filter((charge) => charge.status === 'overdue').length,
+        pendingReconciliation: statementItems.filter((item) => item.status === 'pending').length,
+      });
+    }).catch(() => {
+      setErpKpis({ customers: 0, openCharges: 0, overdueCharges: 0, pendingReconciliation: 0 });
+    });
+  }, [companyUid]);
 
   const grossMargin =
     summary.totalIncome > 0
@@ -156,6 +186,13 @@ export default function DashboardPage() {
           />
         </div>
       )}
+
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        <KpiCard title="Clientes ativos" value={erpKpis.customers} icon={Users} suffix=" " />
+        <KpiCard title="Cobranças abertas" value={erpKpis.openCharges} icon={ReceiptText} suffix=" " variant="warning" />
+        <KpiCard title="Cobranças vencidas" value={erpKpis.overdueCharges} icon={AlertTriangle} suffix=" " variant={erpKpis.overdueCharges > 0 ? 'danger' : 'success'} />
+        <KpiCard title="Conciliação pendente" value={erpKpis.pendingReconciliation} icon={GitCompareArrows} suffix=" " variant={erpKpis.pendingReconciliation > 0 ? 'warning' : 'success'} />
+      </div>
 
       {/* Charts */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">

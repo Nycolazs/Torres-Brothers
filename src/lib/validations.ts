@@ -23,14 +23,21 @@ export const transactionSchema = z.object({
   }),
   amount: positiveNumber,
   categoryId: requiredString.describe("Selecione uma categoria"),
+  financialAccountId: optionalString,
   costCenterId: optionalString,
   bankAccountId: requiredString.describe("Selecione uma conta bancária"),
+  contactId: optionalString,
+  contactSnapshot: z.any().optional(),
+  documentNumber: optionalString,
   competenceDate: z.date({ message: "Data de competência inválida" }),
   dueDate: z.date({ message: "Data de vencimento inválida" }),
   paymentDate: z.date({ message: "Data de pagamento inválida" }).optional(),
   status: z.enum(["paid", "pending", "overdue", "cancelled"], {
     message: "Selecione o status",
   }),
+  paymentStatus: z.enum(["open", "partial", "paid", "overdue", "cancelled"]).optional(),
+  paidAmount: z.number().optional(),
+  remainingAmount: z.number().optional(),
   paymentMethod: z
     .enum([
       "cash",
@@ -74,6 +81,9 @@ export const transactionSchema = z.object({
     .string()
     .max(100, { message: "Nome deve ter no máximo 100 caracteres" })
     .optional(),
+  sourceModule: optionalString,
+  reconciliationId: optionalString,
+  chargeId: optionalString,
 })
 
 export type TransactionSchemaType = z.infer<typeof transactionSchema>

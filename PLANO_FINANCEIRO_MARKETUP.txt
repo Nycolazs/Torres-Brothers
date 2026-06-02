@@ -1,0 +1,202 @@
+PLANO ERP FINANCEIRO ROBUSTO TORRES BROTHERS
+
+Resumo
+Transformar o sistema atual em um ERP financeiro completo, robusto e profissional, inspirado nos fluxos da MarketUP e adaptado ao negócio da Torres Brothers.
+
+Escopo aprovado:
+- ERP financeiro completo.
+- Base preparada para provedores externos.
+- NFS-e robusta para serviços.
+- Integracoes reais de PIX, boleto, TEF, CNAB e bancos somente quando houver provedor e credenciais definidos.
+
+Referencias estudadas
+- Fluxo de Caixa MarketUP: https://suporte.marketup.com/hc/pt-br/articles/203619005-EXPLORE-O-FLUXO-DE-CAIXA
+- Contas a Receber: https://suporte.marketup.com/hc/pt-br/sections/200713645-Contas-a-Receber
+- Registro de recebimento: https://suporte.marketup.com/hc/pt-br/articles/203596965-REGISTRE-UM-RECEBIMENTO
+- Pagamento em lote: https://suporte.marketup.com/hc/pt-br/articles/360047056991-REALIZE-O-PAGAMENTO-DE-DIVERSAS-CONTAS-DE-UMA-S%C3%93-VEZ
+- Conciliacao OFX/CNAB: https://suporte.marketup.com/hc/pt-br/articles/360046616392-COMO-IMPORTAR-UM-ARQUIVO-OFX-OU-CNAB
+- DRE Gerencial Simplificada: https://suporte.marketup.com/hc/pt-br/articles/205557589-DRE-GERENCIAL-SIMPLIFICADA
+- Versoes MarketUP: https://marketup.com/versoes/
+- App NFS-e, clientes e financeiro: https://suporte.marketup.com/hc/pt-br/articles/40472932856340-Aplicativo-Nota-R%C3%A1pida-Servi%C3%A7os-MarketUP
+
+Diretrizes obrigatorias para o Agent
+- Antes de alterar codigo, verificar dependencias e ler os guias relevantes em node_modules/next/dist/docs/, conforme AGENTS.md. O projeto usa Next.js 16.
+- Usar multiagents e skills para melhor precisao:
+  - Skill vercel:nextjs para arquitetura App Router e Route Handlers.
+  - Skill vercel:react-best-practices apos mudancas em multiplos TSX.
+  - Subagente de modelagem Firebase, regras e indices.
+  - Subagente de UX financeiro/ERP inspirado na MarketUP.
+  - Subagente de relatorios, DRE e exportacoes.
+  - Subagente de QA, testes, regressao e browser verification.
+- Nao implementar integracoes reais sem credenciais. Criar interfaces/adapters para provedores futuros.
+
+Modulos principais
+
+1. Cadastros base
+- Clientes, fornecedores e servicos.
+- Cliente com CPF/CNPJ, nome, fantasia, email, telefone, endereco completo, codigo IBGE, bloqueio, limite de credito, observacoes e historico.
+- Fornecedor com estrutura parecida e vinculo com contas a pagar.
+- Servicos reutilizaveis para NFS-e e cobrancas.
+- Substituir contactName livre por contactId + snapshot, mantendo compatibilidade com dados antigos.
+
+2. Contas a pagar e receber
+- Filtros avancados por periodo, status, contato, conta gerencial, conta bancaria e forma de pagamento.
+- Busca textual.
+- Status aberta, vencida, paga, parcial e cancelada.
+- Pagamento/recebimento individual e em lote.
+- Pagamento parcial.
+- Juros, multa, desconto e acrescimo.
+- Historico de liquidacoes.
+- Recibo em PDF.
+- Exportacao Excel/PDF.
+- Visao separada para contas a pagar, contas pagas, contas a receber e contas recebidas.
+
+3. Fluxo, caixa e bancos
+- Saldo inicial, entradas, saidas e saldo final.
+- Realizado vs previsto.
+- Visao diaria, semanal e mensal.
+- Filtro por conta ou consolidado.
+- Simulacao de saldo futuro.
+- Movimentacao de caixa para lancamentos rapidos.
+- Recalculo de saldo usando liquidacoes reais, nao apenas status do lancamento.
+- Transferencias entre contas com grupo vinculado e rastreavel.
+
+4. Contas gerenciais, centros de custo e orcamento
+- Evoluir categorias para contas gerenciais.
+- Cada conta gerencial deve ter tipo, natureza, classificacao DRE, status, padrao do sistema e bloqueio de exclusao quando houver vinculo.
+- Centros de custo separam areas/projetos.
+- Orcamento compara previsto vs realizado por conta gerencial, centro de custo e periodo.
+
+5. Conciliacao bancaria
+- Modulo Conciliacao Bancaria.
+- Importacao OFX no v1.
+- Estrutura preparada para CNAB futuro.
+- Normalizar extratos em itens com data, valor, descricao, identificador e status.
+- Sugerir conciliacao por valor, data, texto e conta bancaria.
+- Permitir conciliar com lancamento existente, criar lancamento novo, ignorar item e desfazer conciliacao.
+
+6. Cobrancas e provedores
+- Modulo Cobrancas Emitidas.
+- Gerar cobranca a partir de conta a receber.
+- Status rascunho, enviada, paga, vencida e cancelada.
+- Metodos manual, PIX, boleto e cartao/TEF futuro.
+- Camada paymentProvider com adapters manual, mock, pixProvider, boletoProvider e tefProvider.
+- No v1, usar provider manual/mock ate escolha de fornecedor real.
+
+7. Relatorios e DRE
+- Central de relatorios financeiros:
+  - Contas a Receber / Recebidas.
+  - Contas a Pagar / Pagas.
+  - Fluxo de Caixa.
+  - Extrato Bancario.
+  - Conciliacao Bancaria.
+  - Cobrancas Emitidas.
+  - Transacoes TEF/importadas.
+  - Carteira de Clientes.
+  - Curva ABC de Clientes.
+  - Fornecedores.
+  - Orcamento previsto vs realizado.
+  - Centros de Custo.
+  - Notas Fiscais Emitidas.
+- DRE Gerencial Simplificada:
+  - Realizado por competencia.
+  - Projetado.
+  - Analise vertical.
+  - Analise horizontal.
+  - Margem liquida.
+  - Gastos totais.
+  - Agrupamento por classificacao DRE.
+- Todos os relatorios devem ter filtros, totais, tabela, PDF e Excel.
+
+8. NFS-e robusta
+- Selecionar cliente cadastrado.
+- Cadastrar cliente rapido no fluxo.
+- Selecionar servico cadastrado.
+- Preencher tomador automaticamente.
+- Salvar snapshot do cliente/servico na nota.
+- Vincular nota a recebivel.
+- Consultar status.
+- Exibir PDF/XML.
+- Registrar mensagens do provedor.
+- Nao incluir NF-e/NFC-e/PDV no v1.
+
+Modelo de dados
+Adicionar colecoes Firebase sob users/{companyUid}:
+- contacts
+- services
+- financialAccounts
+- transactionPayments
+- bankStatementImports
+- bankStatementItems
+- reconciliations
+- charges
+- auditLogs
+- providerSettings
+
+Estender transactions:
+- contactId
+- contactSnapshot
+- financialAccountId
+- documentNumber
+- paidAmount
+- remainingAmount
+- paymentStatus
+- sourceModule
+- reconciliationId
+- chargeId
+
+Navegacao alvo
+- Dashboard
+- Financeiro
+  - Fluxo de Caixa
+  - Movimentacao de Caixa
+  - Contas a Pagar
+  - Contas Pagas
+  - Contas a Receber
+  - Contas Recebidas
+  - Conciliacao Bancaria
+  - Cobrancas
+  - Contas Bancarias
+  - Contas Gerenciais
+- Faturamento
+  - Notas Fiscais
+- Relatorios
+  - Financeiro
+  - DRE Gerencial Simplificada
+  - Cobrancas Emitidas
+  - Transacoes TEF
+- Cadastros
+  - Clientes
+  - Fornecedores
+  - Servicos
+  - Centros de Custo
+  - Orcamento
+- Administracao
+
+Testes e aceite
+- npm run lint
+- npm run build
+- Validar no navegador:
+  - cadastrar cliente;
+  - cadastrar fornecedor;
+  - cadastrar servico;
+  - criar conta a receber vinculada ao cliente;
+  - receber parcialmente com juros/desconto;
+  - quitar saldo restante;
+  - gerar recibo;
+  - criar conta a pagar vinculada ao fornecedor;
+  - pagar em lote;
+  - importar OFX;
+  - conciliar extrato;
+  - gerar cobranca manual/mock;
+  - emitir NFS-e usando cliente salvo;
+  - gerar DRE;
+  - exportar relatorios em PDF/Excel.
+- Validar permissoes Firebase para admin, usuario aprovado e usuario pendente.
+- Validar responsividade desktop/mobile.
+- Garantir compatibilidade com lancamentos antigos que possuem apenas contactName.
+
+Assumptions
+- Completo e robusto significa ERP financeiro completo, nao clone literal da MarketUP.
+- Integracoes reais serao feitas via adapters quando houver provedor e credenciais.
+- O foco fiscal aprovado continua sendo NFS-e robusta.
