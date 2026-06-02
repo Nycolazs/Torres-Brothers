@@ -70,6 +70,7 @@ export interface Transaction {
   isRecurring: boolean;
   recurrenceType?: RecurrenceType;
   recurrenceEndDate?: Timestamp;
+  recurrenceGroupId?: string;
   notes?: string;
   attachmentUrl?: string;
   tags?: string[];
@@ -109,6 +110,7 @@ export interface TransactionFormData {
   isRecurring: boolean;
   recurrenceType?: RecurrenceType;
   recurrenceEndDate?: Date;
+  recurrenceGroupId?: string;
   notes?: string;
   attachmentUrl?: string;
   tags?: string[];

@@ -107,6 +107,7 @@ export function TransactionModal({
   const isInstallment = watch('isInstallment');
   const isRecurring = watch('isRecurring');
   const status = watch('status');
+  const recurrenceEndDate = watch('recurrenceEndDate');
 
   const filteredCategories = categories.filter((c) => c.type === selectedType);
   const selectedCategory = categories.find((c) => c.id === watch('categoryId'));
@@ -174,6 +175,7 @@ export function TransactionModal({
         totalInstallments: transaction.totalInstallments,
         isRecurring: transaction.isRecurring,
         recurrenceType: transaction.recurrenceType || undefined,
+        recurrenceEndDate: transaction.recurrenceEndDate?.toDate(),
         notes: transaction.notes || '',
         tags: transaction.tags?.join(', ') || '',
         contactName: transaction.contactName || '',
@@ -192,6 +194,8 @@ export function TransactionModal({
         status: 'pending',
         isInstallment: false,
         isRecurring: false,
+        recurrenceType: 'monthly',
+        recurrenceEndDate: new Date(new Date().getFullYear() + 1, new Date().getMonth(), new Date().getDate()),
         notes: '',
         tags: '',
         contactName: '',
@@ -200,6 +204,11 @@ export function TransactionModal({
   }, [transaction, reset, bankAccounts]);
 
   const onFormSubmit = async (data: FormData) => {
+    if (data.isRecurring && (!data.recurrenceType || !data.recurrenceEndDate)) {
+      toast.error('Informe a frequência e a data final da recorrência.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const transactionData = {
@@ -207,7 +216,8 @@ export function TransactionModal({
         financialAccountId: data.financialAccountId || undefined,
         contactId: data.contactId || undefined,
         paymentMethod: data.paymentMethod || undefined,
-        recurrenceType: data.recurrenceType || undefined,
+        recurrenceType: data.isRecurring ? data.recurrenceType || undefined : undefined,
+        recurrenceEndDate: data.isRecurring ? data.recurrenceEndDate : undefined,
       };
       delete transactionData.contactSnapshot;
       const formData: TransactionFormData = {
@@ -616,39 +626,75 @@ export function TransactionModal({
               name="isRecurring"
               control={control}
               render={({ field }) => (
-                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={(checked) => {
+                    field.onChange(checked);
+                    if (checked) {
+                      if (!selectedRecurrenceType) setValue('recurrenceType', 'monthly');
+                      if (!recurrenceEndDate) {
+                        setValue('recurrenceEndDate', new Date(new Date().getFullYear() + 1, new Date().getMonth(), new Date().getDate()));
+                      }
+                    }
+                  }}
+                />
               )}
             />
           </div>
           {isRecurring && (
-            <div className="space-y-2">
-              <Label>Frequência</Label>
-              <Controller
-                name="recurrenceType"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value || 'none'}
-                    onValueChange={(value) => field.onChange(value === 'none' ? undefined : value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecionar frequência">
-                        {selectedRecurrenceType
-                          ? RECURRENCE_TYPE_LABELS[selectedRecurrenceType]
-                          : 'Sem frequência'}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sem frequência</SelectItem>
-                      {Object.entries(RECURRENCE_TYPE_LABELS).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Frequência</Label>
+                <Controller
+                  name="recurrenceType"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || 'none'}
+                      onValueChange={(value) => field.onChange(value === 'none' ? undefined : value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecionar frequência">
+                          {selectedRecurrenceType
+                            ? RECURRENCE_TYPE_LABELS[selectedRecurrenceType]
+                            : 'Sem frequência'}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sem frequência</SelectItem>
+                        {Object.entries(RECURRENCE_TYPE_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Repetir até</Label>
+                <Controller
+                  name="recurrenceEndDate"
+                  control={control}
+                  render={({ field }) => (
+                    <Popover>
+                      <PopoverTrigger className="inline-flex h-10 w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm font-normal text-left hover:bg-accent cursor-pointer">
+                        <CalendarIcon className="h-4 w-4 shrink-0" />
+                        {field.value ? format(field.value, 'dd/MM/yyyy', { locale: ptBR }) : 'Selecionar'}
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={(date) => date && field.onChange(date)}
+                          locale={ptBR}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                />
+              </div>
             </div>
           )}
 

@@ -79,6 +79,7 @@ function formDataToFirestore(
   if (data.recurrenceEndDate !== undefined) {
     record.recurrenceEndDate = data.recurrenceEndDate ? toTimestamp(data.recurrenceEndDate) : null;
   }
+  if (data.recurrenceGroupId !== undefined) record.recurrenceGroupId = data.recurrenceGroupId ?? null;
   if (data.notes !== undefined) record.notes = data.notes ?? null;
   if (data.attachmentUrl !== undefined) record.attachmentUrl = data.attachmentUrl ?? null;
   if (data.tags !== undefined) record.tags = data.tags ?? [];
@@ -99,6 +100,58 @@ function formDataToFirestore(
   }
 
   return record;
+}
+
+function addRecurrencePeriod(date: Date, recurrenceType: NonNullable<TransactionFormData['recurrenceType']>, amount: number) {
+  const nextDate = new Date(date);
+
+  switch (recurrenceType) {
+    case 'daily':
+      nextDate.setDate(nextDate.getDate() + amount);
+      break;
+    case 'weekly':
+      nextDate.setDate(nextDate.getDate() + amount * 7);
+      break;
+    case 'monthly':
+      nextDate.setMonth(nextDate.getMonth() + amount);
+      break;
+    case 'yearly':
+      nextDate.setFullYear(nextDate.getFullYear() + amount);
+      break;
+  }
+
+  return nextDate;
+}
+
+function buildRecurringTransactions(data: TransactionFormData): Array<Partial<TransactionFormData>> {
+  if (!data.isRecurring || !data.recurrenceType || !data.recurrenceEndDate) return [];
+  if (data.recurrenceEndDate < data.dueDate) return [];
+
+  const recurrenceGroupId = crypto.randomUUID();
+  const entries: Array<Partial<TransactionFormData>> = [];
+  let occurrence = 1;
+  let dueDate = new Date(data.dueDate);
+  let competenceDate = new Date(data.competenceDate);
+
+  while (dueDate <= data.recurrenceEndDate && entries.length < 120) {
+    entries.push({
+      ...data,
+      dueDate,
+      competenceDate,
+      recurrenceGroupId,
+      status: occurrence === 1 ? data.status : 'pending',
+      paymentDate: occurrence === 1 ? data.paymentDate : undefined,
+      paymentStatus: occurrence === 1 ? data.paymentStatus : 'open',
+      paidAmount: occurrence === 1 ? data.paidAmount : 0,
+      remainingAmount: occurrence === 1 ? data.remainingAmount : data.amount,
+    });
+
+    occurrence += 1;
+    dueDate = addRecurrencePeriod(data.dueDate, data.recurrenceType, occurrence - 1);
+    competenceDate = addRecurrencePeriod(data.competenceDate, data.recurrenceType, occurrence - 1);
+  }
+
+  return entries;
 }
 
 function docToTransaction(docSnap: DocumentSnapshot): Transaction {
@@ -157,6 +210,30 @@ export async function createTransaction(
 
     await batch.commit();
     await logAudit(uid, 'create_installments', groupId, { count: ids.length, amount: data.amount });
+  } else if (data.isRecurring && data.recurrenceType && data.recurrenceEndDate) {
+    const recurringTransactions = buildRecurringTransactions(data);
+    if (recurringTransactions.length === 0) {
+      const record = formDataToFirestore(uid, data, true);
+      const ref = await addDoc(transactionsCol(uid), record);
+      ids.push(ref.id);
+      await logAudit(uid, 'create', ref.id, { type: data.type, amount: data.amount });
+      return ids;
+    }
+
+    const batch = writeBatch(db);
+
+    recurringTransactions.forEach((recurringData) => {
+      const ref = doc(transactionsCol(uid));
+      batch.set(ref, formDataToFirestore(uid, recurringData, true));
+      ids.push(ref.id);
+    });
+
+    await batch.commit();
+    await logAudit(uid, 'create_recurring', recurringTransactions[0]?.recurrenceGroupId || ids[0], {
+      count: ids.length,
+      recurrenceType: data.recurrenceType,
+      amount: data.amount,
+    });
   } else {
     const record = formDataToFirestore(uid, data, true);
     const ref = await addDoc(transactionsCol(uid), record);

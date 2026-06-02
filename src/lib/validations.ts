@@ -71,6 +71,7 @@ export const transactionSchema = z.object({
   recurrenceEndDate: z
     .date({ message: "Data de fim da recorrência inválida" })
     .optional(),
+  recurrenceGroupId: optionalString,
   notes: z
     .string()
     .max(500, { message: "Observações devem ter no máximo 500 caracteres" })

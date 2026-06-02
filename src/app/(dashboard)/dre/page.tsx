@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Download, FileSpreadsheet } from 'lucide-react';
+import { Download, FileSpreadsheet, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -291,11 +291,41 @@ export default function DREPage() {
     }
   };
 
+  const handlePrint = () => {
+    if (!report) {
+      toast.error('Sem dados para imprimir.');
+      return;
+    }
+
+    window.print();
+  };
+
   if (loading) return <PageSkeleton />;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+
+          #dre-print-area,
+          #dre-print-area * {
+            visibility: visible;
+          }
+
+          #dre-print-area {
+            position: absolute;
+            inset: 0 auto auto 0;
+            width: 100%;
+            border: 0;
+            box-shadow: none;
+          }
+        }
+      `}</style>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold">DRE — Demonstrativo de Resultado</h1>
           <p className="text-sm text-muted-foreground">
@@ -323,10 +353,13 @@ export default function DREPage() {
           <Button variant="outline" size="icon" onClick={handleExportExcel} aria-label="Exportar Excel">
             <FileSpreadsheet className="h-4 w-4" />
           </Button>
+          <Button variant="outline" size="icon" onClick={handlePrint} aria-label="Imprimir DRE">
+            <Printer className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      <Card className="border-dashed">
+      <Card className="border-dashed print:hidden">
         <CardContent className="pt-5">
           <p className="text-sm text-muted-foreground">
             Dica rápida: escolha o mês, leia as linhas em sequência (Receita → Custos → Despesas → Lucro)
@@ -336,7 +369,7 @@ export default function DREPage() {
       </Card>
 
       {horizontalAnalysis && (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-3 print:hidden">
           <Card>
             <CardContent className="p-4">
               <div className="text-sm text-muted-foreground">Receita líquida vs mês anterior</div>
@@ -365,7 +398,7 @@ export default function DREPage() {
       )}
 
       {report && (
-        <Card>
+        <Card id="dre-print-area">
           <CardHeader className="text-center border-b">
             <CardTitle>DEMONSTRATIVO DE RESULTADO DO EXERCÍCIO</CardTitle>
             <p className="text-sm text-muted-foreground capitalize">
