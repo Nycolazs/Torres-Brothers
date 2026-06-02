@@ -89,11 +89,13 @@ export function buildContactSnapshot(contact: Contact): ContactSnapshot {
 // ── Contacts ──────────────────────────────────────────────────────
 
 export async function listContacts(uid: string, type?: ContactType): Promise<Contact[]> {
-  const constraints = type
-    ? [where('type', 'in', type === 'customer' ? ['customer', 'both'] : ['supplier', 'both']), orderBy('name', 'asc')]
-    : [orderBy('name', 'asc')];
-  const snapshot = await getDocs(query(userCol(uid, 'contacts'), ...constraints));
-  return snapshot.docs.map((docSnap) => docTo<Contact>(docSnap));
+  const snapshot = await getDocs(query(userCol(uid, 'contacts'), orderBy('name', 'asc')));
+  const contacts = snapshot.docs.map((docSnap) => docTo<Contact>(docSnap));
+
+  if (!type) return contacts;
+
+  const acceptedTypes = type === 'customer' ? ['customer', 'both'] : ['supplier', 'both'];
+  return contacts.filter((contact) => acceptedTypes.includes(contact.type));
 }
 
 export async function saveContact(uid: string, data: ContactFormData): Promise<string> {

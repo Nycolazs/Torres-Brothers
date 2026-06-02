@@ -76,17 +76,37 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
     if (!companyUid) return;
     setLoading(true);
     try {
-      const [contactData, transactionData, chargeData, invoiceData] = await Promise.all([
-        listContacts(companyUid, mode),
+      const contactData = await listContacts(companyUid, mode);
+      setContacts(contactData);
+
+      const [transactionResult, chargeResult, invoiceResult] = await Promise.allSettled([
         getTransactionsByDateRange(companyUid, new Date(2020, 0, 1), new Date(2035, 11, 31)),
         listCharges(companyUid),
         listFiscalInvoices(companyUid),
       ]);
-      setContacts(contactData);
-      setTransactions(transactionData);
-      setCharges(chargeData);
-      setInvoices(invoiceData);
-    } catch {
+
+      if (transactionResult.status === 'fulfilled') {
+        setTransactions(transactionResult.value);
+      } else {
+        console.error(`[ContactsManager] Erro ao carregar lançamentos de ${title.toLowerCase()}:`, transactionResult.reason);
+        setTransactions([]);
+      }
+
+      if (chargeResult.status === 'fulfilled') {
+        setCharges(chargeResult.value);
+      } else {
+        console.error(`[ContactsManager] Erro ao carregar cobranças de ${title.toLowerCase()}:`, chargeResult.reason);
+        setCharges([]);
+      }
+
+      if (invoiceResult.status === 'fulfilled') {
+        setInvoices(invoiceResult.value);
+      } else {
+        console.error(`[ContactsManager] Erro ao carregar notas fiscais de ${title.toLowerCase()}:`, invoiceResult.reason);
+        setInvoices([]);
+      }
+    } catch (error) {
+      console.error(`[ContactsManager] Erro ao carregar ${title.toLowerCase()}:`, error);
       toast.error(`Erro ao carregar ${title.toLowerCase()}.`);
     } finally {
       setLoading(false);
