@@ -30,6 +30,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { transactionSchema } from '@/lib/validations';
+import { buildClientErrorPayload, logClientError } from '@/services/errorLogService';
 import {
   BankAccount,
   Category,
@@ -44,6 +45,7 @@ import {
   PAYMENT_METHOD_LABELS,
   RECURRENCE_TYPE_LABELS,
 } from '@/constants';
+import { useAuth } from '@/hooks/useAuth';
 
 type FormData = z.infer<typeof transactionSchema>;
 
@@ -68,6 +70,7 @@ export function TransactionModal({
   financialAccounts = [],
   onSubmit,
 }: TransactionModalProps) {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!transaction;
 
@@ -199,7 +202,13 @@ export function TransactionModal({
   const onFormSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
-      const transactionData = { ...data };
+      const transactionData = {
+        ...data,
+        financialAccountId: data.financialAccountId || undefined,
+        contactId: data.contactId || undefined,
+        paymentMethod: data.paymentMethod || undefined,
+        recurrenceType: data.recurrenceType || undefined,
+      };
       delete transactionData.contactSnapshot;
       const formData: TransactionFormData = {
         ...transactionData,
@@ -209,7 +218,14 @@ export function TransactionModal({
       };
       await onSubmit(formData);
       onOpenChange(false);
-    } catch {
+    } catch (error) {
+      const payload = buildClientErrorPayload(error, 'TransactionModal.save', {
+        transactionId: transaction?.id,
+        type: data.type,
+        status: data.status,
+      }, user?.uid);
+      void logClientError(payload);
+      console.error('[TransactionModal] Erro ao salvar lançamento:', error);
       toast.error('Erro ao salvar lançamento.');
     } finally {
       setIsSubmitting(false);
@@ -354,13 +370,17 @@ export function TransactionModal({
                 name="financialAccountId"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value || ''} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value || 'none'}
+                    onValueChange={(value) => field.onChange(value === 'none' ? '' : value)}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecionar conta gerencial">
                         {selectedFinancialAccount?.name}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Sem conta gerencial</SelectItem>
                       {filteredFinancialAccounts.map((account) => (
                         <SelectItem key={account.id} value={account.id}>
                           {account.name}
@@ -378,9 +398,9 @@ export function TransactionModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    value={field.value || ''}
+                    value={field.value || 'none'}
                     onValueChange={(value) => {
-                      field.onChange(value);
+                      field.onChange(value === 'none' ? '' : value);
                       const contact = contacts.find((item) => item.id === value);
                       if (contact) setValue('contactName', contact.name);
                     }}
@@ -391,6 +411,7 @@ export function TransactionModal({
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Sem cadastro vinculado</SelectItem>
                       {filteredContacts.map((contact) => (
                         <SelectItem key={contact.id} value={contact.id}>
                           {contact.name}
@@ -518,13 +539,17 @@ export function TransactionModal({
                 name="paymentMethod"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value || ''} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value || 'none'}
+                    onValueChange={(value) => field.onChange(value === 'none' ? undefined : value)}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecionar">
                         {selectedPaymentMethod ? PAYMENT_METHOD_LABELS[selectedPaymentMethod] : undefined}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Não informado</SelectItem>
                       {Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => (
                         <SelectItem key={key} value={key}>
                           {label}
@@ -586,7 +611,10 @@ export function TransactionModal({
                 name="recurrenceType"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value || ''} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value || 'none'}
+                    onValueChange={(value) => field.onChange(value === 'none' ? undefined : value)}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Selecionar frequência">
                         {selectedRecurrenceType
@@ -595,6 +623,7 @@ export function TransactionModal({
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Sem frequência</SelectItem>
                       {Object.entries(RECURRENCE_TYPE_LABELS).map(([key, label]) => (
                         <SelectItem key={key} value={key}>
                           {label}

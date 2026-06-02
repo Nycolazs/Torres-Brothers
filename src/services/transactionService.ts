@@ -107,14 +107,18 @@ function docToTransaction(docSnap: DocumentSnapshot): Transaction {
 }
 
 async function logAudit(uid: string, action: string, entityId: string, metadata?: Record<string, unknown>) {
-  await addDoc(auditLogsCol(uid), {
-    action,
-    entity: 'transaction',
-    entityId,
-    metadata: metadata || {},
-    createdAt: Timestamp.now(),
-    uid,
-  });
+  try {
+    await addDoc(auditLogsCol(uid), {
+      action,
+      entity: 'transaction',
+      entityId,
+      metadata: metadata || {},
+      createdAt: Timestamp.now(),
+      uid,
+    });
+  } catch (error) {
+    console.warn('[TransactionService] Auditoria ignorada para não bloquear o lançamento:', error);
+  }
 }
 
 // ── Create ────────────────────────────────────────────────────────
