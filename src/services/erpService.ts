@@ -130,7 +130,6 @@ export async function saveContact(uid: string, data: ContactFormData): Promise<s
     mobile: data.mobile?.trim() || null,
     address: data.address || {},
     blocked: data.blocked,
-    creditLimit: data.creditLimit || 0,
     notes: data.notes?.trim() || null,
     updatedAt: now,
     uid,
@@ -395,6 +394,23 @@ export async function updateChargeStatus(
     updatedAt: Timestamp.now(),
   });
   await logAudit(uid, 'status', 'charge', id, { status });
+}
+
+export async function deleteCharge(uid: string, charge: Charge): Promise<void> {
+  const batch = writeBatch(db);
+
+  batch.delete(userDoc(uid, 'charges', charge.id));
+  if (charge.transactionId) {
+    batch.update(userDoc(uid, 'transactions', charge.transactionId), {
+      chargeId: null,
+      updatedAt: Timestamp.now(),
+    });
+  }
+
+  await batch.commit();
+  await logAudit(uid, 'delete', 'charge', charge.id, {
+    transactionId: charge.transactionId || null,
+  });
 }
 
 // ── Bank Reconciliation ───────────────────────────────────────────

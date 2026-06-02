@@ -153,7 +153,6 @@ export interface Contact {
   mobile?: string;
   address?: ContactAddress;
   blocked: boolean;
-  creditLimit?: number;
   notes?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -171,7 +170,6 @@ export interface ContactFormData {
   mobile?: string;
   address?: ContactAddress;
   blocked: boolean;
-  creditLimit?: number;
   notes?: string;
 }
 

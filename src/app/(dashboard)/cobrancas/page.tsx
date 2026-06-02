@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link2, ReceiptText, Search } from 'lucide-react';
+import { Edit, Link2, ReceiptText, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,9 +25,10 @@ import {
 } from '@/components/ui/table';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { getTransactionsByDateRange } from '@/services/transactionService';
-import { buildContactSnapshot, listCharges, listContacts, saveCharge, updateChargeStatus } from '@/services/erpService';
+import { buildContactSnapshot, deleteCharge, listCharges, listContacts, saveCharge, updateChargeStatus } from '@/services/erpService';
 import { Charge, ChargeFormData, ChargeMethod, ChargeStatus, Contact, Transaction } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -68,6 +69,7 @@ export default function CobrancasPage() {
   const [statusFilter, setStatusFilter] = useState<ChargeStatus | 'all'>('all');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Charge | null>(null);
 
   async function load() {
     if (!companyUid) return;
@@ -144,15 +146,6 @@ export default function CobrancasPage() {
       toast.error('Cliente bloqueado. Não é possível emitir cobrança.');
       return;
     }
-    if (contact?.creditLimit) {
-      const openAmount = receivables
-        .filter((receivable) => receivable.contactId === contact.id)
-        .reduce((sum, receivable) => sum + (receivable.remainingAmount ?? receivable.amount), 0);
-      if (openAmount + form.amount > contact.creditLimit) {
-        toast.error('Limite de crédito do cliente excedido.');
-        return;
-      }
-    }
     setSaving(true);
     try {
       await saveCharge(companyUid, {
@@ -166,6 +159,35 @@ export default function CobrancasPage() {
       toast.error('Erro ao salvar cobrança.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const editCharge = (charge: Charge) => {
+    setForm({
+      id: charge.id,
+      transactionId: charge.transactionId,
+      contactId: charge.contactId,
+      contactSnapshot: charge.contactSnapshot,
+      description: charge.description,
+      amount: charge.amount,
+      dueDate: charge.dueDate.toDate(),
+      method: charge.method,
+      status: charge.status,
+      provider: charge.provider,
+      notes: charge.notes || '',
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!companyUid || !deleteTarget) return;
+    try {
+      await deleteCharge(companyUid, deleteTarget);
+      toast.success('Cobrança excluída.');
+      setDeleteTarget(null);
+      if (form.id === deleteTarget.id) setForm(initialForm);
+      await load();
+    } catch {
+      toast.error('Erro ao excluir cobrança.');
     }
   };
 
@@ -233,7 +255,7 @@ export default function CobrancasPage() {
 
       <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
         <Card>
-          <CardHeader><CardTitle className="text-base">Nova cobrança</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{form.id ? 'Editar cobrança' : 'Nova cobrança'}</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={submit} className="space-y-4">
               <div className="space-y-2">
@@ -295,7 +317,14 @@ export default function CobrancasPage() {
                   </Select>
                 </div>
               </div>
-              <Button type="submit" disabled={saving}>{saving ? 'Salvando...' : 'Salvar cobrança'}</Button>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={saving}>{saving ? 'Salvando...' : 'Salvar cobrança'}</Button>
+                {form.id && (
+                  <Button type="button" variant="outline" disabled={saving} onClick={() => setForm(initialForm)}>
+                    Nova
+                  </Button>
+                )}
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -316,7 +345,7 @@ export default function CobrancasPage() {
                     <TableHead>Método</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead />
+                    <TableHead className="w-44 text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -332,7 +361,17 @@ export default function CobrancasPage() {
                       <TableCell className="text-right tabular-nums">{formatCurrency(charge.amount)}</TableCell>
                       <TableCell><Badge variant={charge.status === 'paid' ? 'secondary' : charge.status === 'overdue' ? 'destructive' : 'outline'}>{statusLabels[charge.status]}</Badge></TableCell>
                       <TableCell className="text-right">
-                        {charge.status !== 'paid' && <Button size="sm" variant="outline" onClick={() => setStatus(charge, 'paid')}>Baixar</Button>}
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => editCharge(charge)}>
+                            <Edit className="mr-1 h-3.5 w-3.5" />
+                            Editar
+                          </Button>
+                          {charge.status !== 'paid' && <Button size="sm" variant="outline" onClick={() => setStatus(charge, 'paid')}>Baixar</Button>}
+                          <Button size="sm" variant="outline" onClick={() => setDeleteTarget(charge)}>
+                            <Trash2 className="mr-1 h-3.5 w-3.5" />
+                            Excluir
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -342,6 +381,16 @@ export default function CobrancasPage() {
           </CardContent>
         </Card>
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Excluir cobrança"
+        description="Tem certeza que deseja excluir esta cobrança? Esta ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        variant="destructive"
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

@@ -129,6 +129,30 @@ export default function NotasFiscaisPage() {
     );
   }, [invoices]);
 
+  const selectedTransactionLabel = useMemo(() => {
+    if (selectedTransactionId === 'manual') return 'Preenchimento manual';
+    const transaction = receivables.find((item) => item.id === selectedTransactionId);
+    return transaction
+      ? `${transaction.description} - ${formatCurrency(transaction.amount)}`
+      : 'Preenchimento manual';
+  }, [receivables, selectedTransactionId]);
+
+  const selectedCustomerLabel = useMemo(() => {
+    if (selectedCustomerId === 'manual') return 'Preenchimento manual';
+    const customer = customers.find((item) => item.id === selectedCustomerId);
+    return customer
+      ? `${customer.name}${customer.document ? ` - ${customer.document}` : ''}`
+      : 'Preenchimento manual';
+  }, [customers, selectedCustomerId]);
+
+  const selectedServiceLabel = useMemo(() => {
+    if (selectedServiceId === 'manual') return 'Preenchimento manual';
+    const service = services.find((item) => item.id === selectedServiceId);
+    return service
+      ? `${service.description} - ${formatCurrency(service.defaultAmount)}`
+      : 'Preenchimento manual';
+  }, [selectedServiceId, services]);
+
   const patchCustomer = (path: string, value: string) => {
     setForm((current) => ({
       ...current,
@@ -165,31 +189,73 @@ export default function NotasFiscaisPage() {
   const handleTransactionChange = (id: string | null) => {
     if (!id) return;
     setSelectedTransactionId(id);
+    if (id === 'manual') {
+      setForm((current) => ({ ...current, transactionId: undefined }));
+      return;
+    }
     const transaction = receivables.find((item) => item.id === id);
     if (!transaction) {
       setForm((current) => ({ ...current, transactionId: undefined }));
       return;
     }
 
-    setForm((current) => ({
-      ...current,
-      transactionId: transaction.id,
-      customer: {
-        ...current.customer,
-        name: transaction.contactName || current.customer.name,
-      },
-      service: {
-        ...current.service,
-        description: transaction.description,
-        amount: transaction.amount,
-      },
-    }));
+    const linkedCustomer = transaction.contactId
+      ? customers.find((item) => item.id === transaction.contactId)
+      : undefined;
+
+    if (linkedCustomer) {
+      setSelectedCustomerId(linkedCustomer.id);
+    }
+
+    setForm((current) => {
+      const nextCustomer = linkedCustomer
+        ? {
+            name: linkedCustomer.name,
+            document: linkedCustomer.document || '',
+            email: linkedCustomer.email || '',
+            phone: linkedCustomer.phone || linkedCustomer.mobile || '',
+            address: {
+              street: linkedCustomer.address?.street || '',
+              number: linkedCustomer.address?.number || '',
+              complement: linkedCustomer.address?.complement || '',
+              district: linkedCustomer.address?.district || '',
+              cityCode: linkedCustomer.address?.cityCode || '',
+              city: linkedCustomer.address?.city || '',
+              state: linkedCustomer.address?.state || '',
+              zipCode: linkedCustomer.address?.zipCode || '',
+            },
+          }
+        : {
+            ...current.customer,
+            name: transaction.contactName || current.customer.name,
+          };
+
+      return {
+        ...current,
+        transactionId: transaction.id,
+        customerId: linkedCustomer?.id || current.customerId,
+        customerSnapshot: linkedCustomer ? buildContactSnapshot(linkedCustomer) : current.customerSnapshot,
+        customer: nextCustomer,
+        service: {
+          ...current.service,
+          description: transaction.description,
+          amount: transaction.amount,
+        },
+      };
+    });
   };
 
   const handleCustomerChange = (id: string | null) => {
     if (!id) return;
     setSelectedCustomerId(id);
-    if (id === 'manual') return;
+    if (id === 'manual') {
+      setForm((current) => ({
+        ...current,
+        customerId: undefined,
+        customerSnapshot: undefined,
+      }));
+      return;
+    }
     const customer = customers.find((item) => item.id === id);
     if (!customer) return;
 
@@ -219,7 +285,14 @@ export default function NotasFiscaisPage() {
   const handleServiceChange = (id: string | null) => {
     if (!id) return;
     setSelectedServiceId(id);
-    if (id === 'manual') return;
+    if (id === 'manual') {
+      setForm((current) => ({
+        ...current,
+        serviceId: undefined,
+        serviceSnapshot: undefined,
+      }));
+      return;
+    }
     const service = services.find((item) => item.id === id);
     if (!service) return;
 
@@ -264,7 +337,6 @@ export default function NotasFiscaisPage() {
         phone: form.customer.phone,
         address: form.customer.address,
         blocked: false,
-        creditLimit: 0,
       });
       const customerData = await listContacts(companyUid, 'customer');
       setCustomers(customerData);
@@ -335,7 +407,7 @@ export default function NotasFiscaisPage() {
                 <Label>Recebível vinculado</Label>
                 <Select value={selectedTransactionId} onValueChange={handleTransactionChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um lançamento" />
+                    <SelectValue>{selectedTransactionLabel}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="manual">Preenchimento manual</SelectItem>
@@ -352,7 +424,7 @@ export default function NotasFiscaisPage() {
                 <Label>Cliente cadastrado</Label>
                 <Select value={selectedCustomerId} onValueChange={handleCustomerChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um cliente" />
+                    <SelectValue>{selectedCustomerLabel}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="manual">Preenchimento manual</SelectItem>
@@ -449,7 +521,7 @@ export default function NotasFiscaisPage() {
                 <Label>Serviço cadastrado</Label>
                 <Select value={selectedServiceId} onValueChange={handleServiceChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um serviço" />
+                    <SelectValue>{selectedServiceLabel}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="manual">Preenchimento manual</SelectItem>

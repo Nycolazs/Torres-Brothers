@@ -33,7 +33,6 @@ import {
   FileUp,
   DatabaseBackup,
 } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -97,7 +96,7 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
   return (
     <aside
       className={cn(
-        'flex flex-col w-56 lg:w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border',
+        'flex h-full min-h-0 flex-col w-56 lg:w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border',
         className
       )}
     >
@@ -123,7 +122,7 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
       )}
 
       {/* Navigation */}
-      <ScrollArea className="flex-1 py-3">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-3 [scrollbar-gutter:stable]">
         <nav className="space-y-0.5 px-3">
           {mainNavItems.map((item) => {
             const isActive = pathname === item.href;
@@ -234,7 +233,7 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
             </nav>
           </>
         )}
-      </ScrollArea>
+      </div>
     </aside>
   );
 }

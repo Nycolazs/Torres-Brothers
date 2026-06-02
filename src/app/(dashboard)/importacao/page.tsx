@@ -28,8 +28,8 @@ interface ImportResult {
 }
 
 const examples: Record<ImportKind, string> = {
-  customers: 'name;document;email;phone;city;state;creditLimit',
-  suppliers: 'name;document;email;phone;city;state;creditLimit',
+  customers: 'name;document;email;phone;city;state',
+  suppliers: 'name;document;email;phone;city;state',
   transactions: 'type;description;amount;categoryId;bankAccountId;dueDate;status',
 };
 
@@ -82,7 +82,6 @@ export default function ImportacaoPage() {
             cityCode: row.cityCode || '',
           },
           blocked: false,
-          creditLimit: readCsvNumber(row.creditLimit),
           notes: row.notes || '',
         });
         imported += 1;

@@ -54,7 +54,6 @@ const emptyForm = (type: ContactType): ContactFormData => ({
     zipCode: '',
   },
   blocked: false,
-  creditLimit: 0,
   notes: '',
 });
 
@@ -191,7 +190,6 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
       mobile: contact.mobile || '',
       address: contact.address || emptyForm(mode).address,
       blocked: contact.blocked,
-      creditLimit: contact.creditLimit || 0,
       notes: contact.notes || '',
     });
   };
@@ -302,14 +300,6 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Limite de crédito</Label>
-                  <Input
-                    type="number"
-                    value={form.creditLimit}
-                    onChange={(e) => setForm({ ...form, creditLimit: Number(e.target.value) })}
-                  />
-                </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -414,7 +404,6 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
                     <TableHead>Nome</TableHead>
                     <TableHead>Documento</TableHead>
                     <TableHead>Contato</TableHead>
-                    <TableHead className="text-right">Limite</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-24" />
                   </TableRow>
@@ -431,7 +420,6 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
                         <div className="text-sm">{contact.email || '-'}</div>
                         <div className="text-xs text-muted-foreground">{contact.phone || contact.mobile}</div>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{formatCurrency(contact.creditLimit || 0)}</TableCell>
                       <TableCell>
                         <Badge variant={contact.blocked ? 'destructive' : 'secondary'}>
                           {contact.blocked ? 'Bloqueado' : 'Ativo'}

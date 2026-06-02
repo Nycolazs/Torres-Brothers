@@ -131,21 +131,6 @@ export default function LancamentosPage() {
       toast.error('Cliente bloqueado. Não é possível criar novo recebível.');
       return;
     }
-    if (data.type === 'income' && selectedContact?.creditLimit) {
-      const openAmount = transactions
-        .filter((transaction) =>
-          transaction.id !== editingTransaction?.id &&
-          transaction.contactId === selectedContact.id &&
-          transaction.status !== 'paid' &&
-          transaction.status !== 'cancelled'
-        )
-        .reduce((sum, transaction) => sum + (transaction.remainingAmount ?? transaction.amount), 0);
-      const nextOpenAmount = openAmount + data.amount;
-      if (nextOpenAmount > selectedContact.creditLimit) {
-        toast.error('Limite de crédito do cliente excedido.');
-        return;
-      }
-    }
     const payload: TransactionFormData = {
       ...data,
       contactSnapshot: selectedContact ? buildContactSnapshot(selectedContact) : data.contactSnapshot,

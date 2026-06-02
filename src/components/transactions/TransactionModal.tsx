@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency, parseBRLCurrency } from '@/lib/utils';
 import { transactionSchema } from '@/lib/validations';
 import { buildClientErrorPayload, logClientError } from '@/services/errorLogService';
 import {
@@ -72,6 +72,8 @@ export function TransactionModal({
 }: TransactionModalProps) {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAmountFocused, setIsAmountFocused] = useState(false);
+  const [amountInput, setAmountInput] = useState('');
   const isEditing = !!transaction;
 
   const {
@@ -289,13 +291,35 @@ export function TransactionModal({
             </div>
             <div className="space-y-2">
               <Label htmlFor="amount">Valor (R$) *</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                min="0"
-                {...register('amount', { valueAsNumber: true })}
-                placeholder="0,00"
+              <Controller
+                name="amount"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    id="amount"
+                    type="text"
+                    inputMode="decimal"
+                    value={isAmountFocused ? amountInput : field.value ? formatCurrency(field.value) : ''}
+                    onChange={(event) => {
+                      const rawValue = event.target.value;
+                      setAmountInput(rawValue);
+                      const normalizedValue = rawValue.includes(',') || rawValue.includes('R$')
+                        ? parseBRLCurrency(rawValue)
+                        : Number(rawValue.replace(/[^\d.]/g, '')) || 0;
+                      field.onChange(normalizedValue);
+                    }}
+                    onFocus={(event) => {
+                      setIsAmountFocused(true);
+                      setAmountInput(field.value ? String(field.value).replace('.', ',') : '');
+                      event.currentTarget.select();
+                    }}
+                    onBlur={() => {
+                      setIsAmountFocused(false);
+                      field.onBlur();
+                    }}
+                    placeholder="R$ 0,00"
+                  />
+                )}
               />
               {errors.amount && (
                 <p className="text-sm text-destructive">{errors.amount.message}</p>
