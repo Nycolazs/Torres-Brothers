@@ -25,11 +25,13 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { ErrorState } from '@/components/shared/ErrorState';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { listCharges, listContacts, saveContact } from '@/services/erpService';
 import { listFiscalInvoices } from '@/services/fiscalInvoiceService';
 import { getTransactionsByDateRange } from '@/services/transactionService';
+import { buildClientErrorPayload, logClientError } from '@/services/errorLogService';
 import { Charge, Contact, ContactFormData, ContactType, FiscalInvoice, Transaction } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -61,12 +63,13 @@ interface ContactsManagerProps {
 }
 
 export function ContactsManager({ mode }: ContactsManagerProps) {
-  const { companyUid } = useAuth();
+  const { companyUid, user, can } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [charges, setCharges] = useState<Charge[]>([]);
   const [invoices, setInvoices] = useState<FiscalInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [form, setForm] = useState<ContactFormData>(emptyForm(mode));
   const title = mode === 'customer' ? 'Clientes' : 'Fornecedores';
@@ -74,7 +77,12 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
 
   async function load() {
     if (!companyUid) return;
+    if (!can('contacts:write')) {
+      toast.error('Seu perfil não tem permissão para salvar cadastros.');
+      return;
+    }
     setLoading(true);
+    setLoadError(null);
     try {
       const contactData = await listContacts(companyUid, mode);
       setContacts(contactData);
@@ -107,6 +115,9 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
       }
     } catch (error) {
       console.error(`[ContactsManager] Erro ao carregar ${title.toLowerCase()}:`, error);
+      const payload = buildClientErrorPayload(error, 'ContactsManager.load', { mode }, user?.uid);
+      setLoadError(payload.message);
+      void logClientError(payload);
       toast.error(`Erro ao carregar ${title.toLowerCase()}.`);
     } finally {
       setLoading(false);
@@ -191,7 +202,9 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
       toast.success(`${title.slice(0, -1)} salvo com sucesso.`);
       setForm(emptyForm(mode));
       await load();
-    } catch {
+    } catch (error) {
+      const payload = buildClientErrorPayload(error, 'ContactsManager.save', { mode, id: form.id }, user?.uid);
+      void logClientError(payload);
       toast.error(`Erro ao salvar ${singular}.`);
     }
   };
@@ -217,6 +230,16 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+        {loadError && (
+          <div className="xl:col-span-2">
+            <ErrorState
+              title={`Erro ao carregar ${title.toLowerCase()}.`}
+              technicalDetails={loadError}
+              onRetry={load}
+            />
+          </div>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -305,7 +328,9 @@ export function ContactsManager({ mode }: ContactsManagerProps) {
               </div>
 
               <div className="flex gap-2">
-                <Button type="submit">{form.id ? 'Salvar alterações' : 'Cadastrar'}</Button>
+                <Button type="submit" disabled={!can('contacts:write')}>
+                  {form.id ? 'Salvar alterações' : 'Cadastrar'}
+                </Button>
                 {form.id && (
                   <Button type="button" variant="outline" onClick={() => setForm(emptyForm(mode))}>
                     Novo

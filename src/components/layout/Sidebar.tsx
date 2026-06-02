@@ -30,6 +30,8 @@ import {
   CircleCheck,
   History,
   PlugZap,
+  FileUp,
+  DatabaseBackup,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -49,6 +51,7 @@ const mainNavItems = [
   { href: '/notas-fiscais', label: 'Notas Fiscais', icon: FileCheck2, hint: 'Emita e acompanhe NFS-e' },
   { href: '/notas-recebidas', label: 'Notas Recebidas', icon: FileInput, hint: 'Preparação para entrada fiscal' },
   { href: '/relatorios', label: 'Relatórios', icon: FileText, hint: 'Exporte informações em PDF e Excel' },
+  { href: '/backup', label: 'Backup', icon: DatabaseBackup, hint: 'Exporte bases financeiras completas' },
   { href: '/ajuda', label: 'Ajuda', icon: CircleHelp, hint: 'Guia rápido de uso do sistema' },
 ];
 
@@ -61,6 +64,7 @@ const cadastrosNavItems = [
   { href: '/contas-bancarias', label: 'Contas Bancárias', icon: Landmark, hint: 'Gerencie contas e saldos' },
   { href: '/centros-custo', label: 'Centros de Custo', icon: Building, hint: 'Separe resultados por área' },
   { href: '/orcamento', label: 'Orçamento', icon: PieChart, hint: 'Defina metas e limites por categoria' },
+  { href: '/importacao', label: 'Importação', icon: FileUp, hint: 'Importe clientes, fornecedores e lançamentos por CSV' },
 ];
 
 const accountNavItems = [
@@ -81,7 +85,7 @@ interface SidebarProps {
 
 export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProps) {
   const pathname = usePathname();
-  const { isAdmin } = useAuth();
+  const { isAdmin, can } = useAuth();
 
   const itemBaseClass =
     'flex items-center gap-3 rounded-xl px-3 py-2 text-[14px] transition-all';
@@ -195,7 +199,7 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
           })}
         </nav>
 
-        {isAdmin && (
+        {(isAdmin || can('audit:read')) && (
           <>
             <div className="px-5 pt-5 pb-2">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
@@ -204,7 +208,12 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
             </div>
 
             <nav className="space-y-0.5 px-3 pb-3">
-              {adminNavItems.map((item) => {
+              {adminNavItems
+                .filter((item) => {
+                  if (item.href === '/auditoria') return isAdmin || can('audit:read');
+                  return isAdmin;
+                })
+                .map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <Link

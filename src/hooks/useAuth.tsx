@@ -17,6 +17,7 @@ import { seedDefaultBankAccount } from '@/services/accountService';
 import { seedDefaultCostCenter } from '@/services/costCenterService';
 import { ensureUserProfile } from '@/services/userService';
 import { PRIMARY_COMPANY_NAME } from '@/constants';
+import { hasPermission, Permission } from '@/lib/access';
 
 interface AuthResult {
   profile: UserProfile;
@@ -28,6 +29,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   companyUid: string | null;
   isAdmin: boolean;
+  can: (permission: Permission) => boolean;
   hasDashboardAccess: boolean;
   loading: boolean;
   signInWithGoogle: () => Promise<AuthResult | null>;
@@ -151,6 +153,10 @@ function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const isAdmin = profile?.role === 'admin';
+  const can = useCallback(
+    (permission: Permission) => hasPermission(profile?.role, permission),
+    [profile?.role]
+  );
   const hasDashboardAccess = profile?.accessStatus === 'approved';
 
   return (
@@ -160,6 +166,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         companyUid,
         isAdmin,
+        can,
         hasDashboardAccess,
         loading,
         signInWithGoogle,

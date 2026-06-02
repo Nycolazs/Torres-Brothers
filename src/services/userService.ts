@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { PRIMARY_COMPANY_NAME } from '@/constants';
-import { SystemConfig, UserAccessStatus, UserProfile } from '@/types';
+import { SystemConfig, UserAccessStatus, UserProfile, UserRole } from '@/types';
 
 function systemConfigRef() {
   return doc(db, 'system', 'main');
@@ -23,6 +23,10 @@ function profileRef(uid: string) {
 
 function userIndexRef(uid: string) {
   return doc(db, 'userIndex', uid);
+}
+
+function auditLogsCol(uid: string) {
+  return collection(db, 'users', uid, 'auditLogs');
 }
 
 function omitUndefined<T extends object>(obj: T): Partial<T> {
@@ -236,5 +240,49 @@ export async function updateUserAccessStatus(
   await Promise.all([
     updateDoc(profileRef(uid), update),
     updateDoc(userIndexRef(uid), update),
+    setDoc(doc(auditLogsCol(config.adminUid)), {
+      action: 'update_access_status',
+      entity: 'user',
+      entityId: uid,
+      metadata: { accessStatus, adminUid },
+      createdAt: now,
+      uid: config.adminUid,
+    }),
+  ]);
+}
+
+export async function updateUserRole(
+  uid: string,
+  role: UserRole,
+  adminUid: string
+): Promise<void> {
+  const config = await getSystemConfig();
+
+  if (!config) {
+    throw new Error('Configuração principal da empresa não encontrada.');
+  }
+
+  if (uid === config.adminUid && role !== 'admin') {
+    throw new Error('O administrador principal deve permanecer como administrador.');
+  }
+
+  const update = {
+    role,
+    updatedAt: Timestamp.now(),
+    updatedBy: adminUid,
+  };
+  const auditRef = doc(auditLogsCol(config.adminUid));
+
+  await Promise.all([
+    updateDoc(profileRef(uid), update),
+    updateDoc(userIndexRef(uid), update),
+    setDoc(auditRef, {
+      action: 'update_role',
+      entity: 'user',
+      entityId: uid,
+      metadata: { role, adminUid },
+      createdAt: Timestamp.now(),
+      uid: config.adminUid,
+    }),
   ]);
 }

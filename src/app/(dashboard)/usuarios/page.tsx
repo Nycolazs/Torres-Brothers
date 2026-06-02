@@ -17,11 +17,18 @@ import {
 } from '@/components/ui/table';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
-import { USER_ACCESS_STATUS_LABELS } from '@/constants';
+import { USER_ACCESS_STATUS_LABELS, USER_ROLE_LABELS } from '@/constants';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDate } from '@/lib/utils';
-import { UserProfile } from '@/types';
-import { listUserProfiles, updateUserAccessStatus } from '@/services/userService';
+import { UserProfile, UserRole } from '@/types';
+import { listUserProfiles, updateUserAccessStatus, updateUserRole } from '@/services/userService';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function UsuariosPage() {
   const router = useRouter();
@@ -88,6 +95,21 @@ export default function UsuariosPage() {
       await fetchUsers();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar o usuário.');
+    } finally {
+      setActionUid(null);
+    }
+  };
+
+  const handleRoleChange = async (targetUser: UserProfile, role: UserRole) => {
+    if (!user) return;
+
+    setActionUid(targetUser.uid);
+    try {
+      await updateUserRole(targetUser.uid, role, user.uid);
+      toast.success('Perfil atualizado com sucesso.');
+      await fetchUsers();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Não foi possível atualizar o perfil.');
     } finally {
       setActionUid(null);
     }
@@ -236,9 +258,28 @@ export default function UsuariosPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={isMainAdmin ? 'default' : 'outline'}>
-                          {isMainAdmin ? 'Administrador' : 'Usuário'}
-                        </Badge>
+                        {isMainAdmin ? (
+                          <Badge>{USER_ROLE_LABELS.admin}</Badge>
+                        ) : (
+                          <Select
+                            value={listedUser.role}
+                            onValueChange={(value) => handleRoleChange(listedUser, value as UserRole)}
+                            disabled={isBusy}
+                          >
+                            <SelectTrigger className="h-9 w-48">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(USER_ROLE_LABELS)
+                                .filter(([role]) => role !== 'admin')
+                                .map(([role, label]) => (
+                                  <SelectItem key={role} value={role}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </TableCell>
                       <TableCell>{formatDate(listedUser.createdAt)}</TableCell>
                       <TableCell className="text-right">

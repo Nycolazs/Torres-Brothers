@@ -4,6 +4,7 @@ import {
   PaymentMethod,
   BankAccountType,
   UserAccessStatus,
+  UserRole,
 } from '@/types';
 
 export const PRIMARY_COMPANY_NAME = 'Torres Brothers';
@@ -87,6 +88,16 @@ export const USER_ACCESS_STATUS_LABELS: Record<UserAccessStatus, string> = {
   pending: 'Pendente',
   approved: 'Aprovado',
   rejected: 'Sem acesso',
+};
+
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  admin: 'Administrador',
+  finance: 'Financeiro completo',
+  finance_readonly: 'Financeiro leitura',
+  fiscal: 'Fiscal',
+  operator: 'Operador',
+  auditor: 'Auditoria',
+  user: 'Usuário',
 };
 
 // ── DRE Category Groups ────────────────────────────────────────────

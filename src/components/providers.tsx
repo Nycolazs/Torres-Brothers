@@ -5,12 +5,14 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from '@/hooks/useAuth';
+import { GlobalErrorReporter } from '@/components/shared/GlobalErrorReporter';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <AuthProvider>
         <TooltipProvider>
+          <GlobalErrorReporter />
           {children}
           <Toaster
             position="top-right"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { History, Search } from 'lucide-react';
+import { Bug, History, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,12 +24,14 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { listAuditLogs } from '@/services/erpService';
-import { AuditLog } from '@/types';
+import { listClientErrors } from '@/services/errorLogService';
+import { AuditLog, ClientErrorLog } from '@/types';
 import { formatDate } from '@/lib/utils';
 
 export default function AuditoriaPage() {
   const { companyUid, isAdmin } = useAuth();
   const [logs, setLogs] = useState<AuditLog[] | null>(null);
+  const [clientErrors, setClientErrors] = useState<ClientErrorLog[] | null>(null);
   const [query, setQuery] = useState('');
   const [entityFilter, setEntityFilter] = useState('all');
 
@@ -37,8 +39,14 @@ export default function AuditoriaPage() {
     if (!companyUid || !isAdmin) {
       return;
     }
-    listAuditLogs(companyUid)
-      .then(setLogs)
+    Promise.all([
+      listAuditLogs(companyUid),
+      listClientErrors(),
+    ])
+      .then(([auditData, errorData]) => {
+        setLogs(auditData);
+        setClientErrors(errorData);
+      })
       .catch(() => toast.error('Erro ao carregar auditoria.'))
   }, [companyUid, isAdmin]);
 
@@ -116,6 +124,39 @@ export default function AuditoriaPage() {
                     <TableCell className="font-mono text-xs">{log.entityId}</TableCell>
                     <TableCell className="max-w-[360px] truncate text-xs text-muted-foreground">
                       {JSON.stringify(log.metadata || {})}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-0">
+          {clientErrors === null ? (
+            <div className="p-4"><TableSkeleton /></div>
+          ) : clientErrors.length === 0 ? (
+            <EmptyState icon={Bug} title="Sem erros de produção" description="Nenhum erro client-side foi registrado recentemente." />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead>Data</TableHead>
+                  <TableHead>Rota</TableHead>
+                  <TableHead>Origem</TableHead>
+                  <TableHead>Mensagem</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {clientErrors.map((error) => (
+                  <TableRow key={error.id}>
+                    <TableCell>{formatDate(error.createdAt)}</TableCell>
+                    <TableCell className="font-mono text-xs">{error.route || '-'}</TableCell>
+                    <TableCell>{error.source}</TableCell>
+                    <TableCell className="max-w-[520px] truncate text-xs text-muted-foreground">
+                      {error.message}
                     </TableCell>
                   </TableRow>
                 ))}

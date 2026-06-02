@@ -104,8 +104,15 @@ service cloud.firestore {
     match /userIndex/{uid} {
       allow read: if isAdmin();
       allow create: if isOwner(uid);
-      allow update: if isOwner(uid) || isAdmin();
+      allow update: if isAdmin();
       allow delete: if false;
+    }
+
+    match /clientErrors/{document=**} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() &&
+        request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
     }
 
     match /users/{userId}/categories/{document=**} {

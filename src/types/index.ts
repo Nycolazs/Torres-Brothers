@@ -15,7 +15,14 @@ export type PaymentMethod =
 export type RecurrenceType = 'daily' | 'weekly' | 'monthly' | 'yearly';
 export type BankAccountType = 'checking' | 'savings' | 'cash' | 'investment';
 export type UserAccessStatus = 'pending' | 'approved' | 'rejected';
-export type UserRole = 'admin' | 'user';
+export type UserRole =
+  | 'admin'
+  | 'finance'
+  | 'finance_readonly'
+  | 'fiscal'
+  | 'operator'
+  | 'auditor'
+  | 'user';
 export type ContactType = 'customer' | 'supplier' | 'both';
 export type PaymentStatus = 'open' | 'partial' | 'paid' | 'overdue' | 'cancelled';
 export type DREClassification =
@@ -326,6 +333,18 @@ export interface AuditLog {
   metadata?: Record<string, unknown>;
   createdAt: Timestamp;
   uid: string;
+}
+
+export interface ClientErrorLog {
+  id: string;
+  uid?: string | null;
+  route?: string | null;
+  source: string;
+  message: string;
+  stack?: string;
+  metadata?: Record<string, unknown>;
+  userAgent?: string | null;
+  createdAt: Timestamp;
 }
 
 export interface ProviderSetting {

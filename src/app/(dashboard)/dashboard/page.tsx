@@ -12,6 +12,8 @@ import {
   ReceiptText,
   Users,
   GitCompareArrows,
+  ShieldAlert,
+  ArrowDownCircle,
 } from 'lucide-react';
 import {
   Select,
@@ -27,6 +29,7 @@ import { useTransactionsSummary, useRecentTransactions } from '@/hooks/useTransa
 import { useCashFlowChart, useExpenseBreakdown } from '@/hooks/useCashFlow';
 import { useAuth } from '@/hooks/useAuth';
 import { listBankStatementItems, listCharges, listContacts } from '@/services/erpService';
+import { getTransactionsByDateRange } from '@/services/transactionService';
 import { getDateRange, calculatePercentageChange } from '@/lib/utils';
 import { PERIOD_OPTIONS } from '@/constants';
 
@@ -51,6 +54,9 @@ export default function DashboardPage() {
     openCharges: 0,
     overdueCharges: 0,
     pendingReconciliation: 0,
+    overdueAmount: 0,
+    openReceivables: 0,
+    projectedBalance: 0,
   });
   const selectedPeriodLabel =
     PERIOD_OPTIONS.find((option) => option.value === period)?.label ?? 'Período';
@@ -86,17 +92,40 @@ export default function DashboardPage() {
       listContacts(companyUid, 'customer'),
       listCharges(companyUid),
       listBankStatementItems(companyUid),
-    ]).then(([contacts, charges, statementItems]) => {
+      getTransactionsByDateRange(companyUid, dateRange.start, dateRange.end),
+    ]).then(([contacts, charges, statementItems, transactions]) => {
+      const activeTransactions = transactions.filter((transaction) => transaction.status !== 'cancelled');
+      const openReceivables = activeTransactions
+        .filter((transaction) => transaction.type === 'income' && transaction.status !== 'paid')
+        .reduce((sum, transaction) => sum + (transaction.remainingAmount ?? transaction.amount), 0);
+      const projectedBalance = activeTransactions.reduce((sum, transaction) => {
+        const amount = transaction.remainingAmount ?? transaction.amount;
+        return transaction.type === 'income' ? sum + amount : sum - amount;
+      }, 0);
+
       setErpKpis({
         customers: contacts.length,
         openCharges: charges.filter((charge) => charge.status === 'draft' || charge.status === 'sent').length,
         overdueCharges: charges.filter((charge) => charge.status === 'overdue').length,
         pendingReconciliation: statementItems.filter((item) => item.status === 'pending').length,
+        overdueAmount: activeTransactions
+          .filter((transaction) => transaction.status === 'overdue')
+          .reduce((sum, transaction) => sum + (transaction.remainingAmount ?? transaction.amount), 0),
+        openReceivables,
+        projectedBalance,
       });
     }).catch(() => {
-      setErpKpis({ customers: 0, openCharges: 0, overdueCharges: 0, pendingReconciliation: 0 });
+      setErpKpis({
+        customers: 0,
+        openCharges: 0,
+        overdueCharges: 0,
+        pendingReconciliation: 0,
+        overdueAmount: 0,
+        openReceivables: 0,
+        projectedBalance: 0,
+      });
     });
-  }, [companyUid]);
+  }, [companyUid, dateRange.end, dateRange.start]);
 
   const grossMargin =
     summary.totalIncome > 0
@@ -192,6 +221,27 @@ export default function DashboardPage() {
         <KpiCard title="Cobranças abertas" value={erpKpis.openCharges} icon={ReceiptText} suffix=" " variant="warning" />
         <KpiCard title="Cobranças vencidas" value={erpKpis.overdueCharges} icon={AlertTriangle} suffix=" " variant={erpKpis.overdueCharges > 0 ? 'danger' : 'success'} />
         <KpiCard title="Conciliação pendente" value={erpKpis.pendingReconciliation} icon={GitCompareArrows} suffix=" " variant={erpKpis.pendingReconciliation > 0 ? 'warning' : 'success'} />
+      </div>
+
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+        <KpiCard
+          title="Valor vencido"
+          value={erpKpis.overdueAmount}
+          icon={ShieldAlert}
+          variant={erpKpis.overdueAmount > 0 ? 'danger' : 'success'}
+        />
+        <KpiCard
+          title="Recebíveis em aberto"
+          value={erpKpis.openReceivables}
+          icon={ArrowDownCircle}
+          variant="warning"
+        />
+        <KpiCard
+          title="Saldo projetado"
+          value={erpKpis.projectedBalance}
+          icon={Wallet}
+          variant={erpKpis.projectedBalance >= 0 ? 'success' : 'danger'}
+        />
       </div>
 
       {/* Charts */}
