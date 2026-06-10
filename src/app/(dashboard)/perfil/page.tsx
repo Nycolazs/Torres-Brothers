@@ -211,12 +211,12 @@ export default function PerfilPage() {
                 Acesso com Google
               </CardTitle>
               <CardDescription>
-                O login no sistema acontece exclusivamente pela sua conta Google.
+                Você pode entrar com e-mail/senha ou vincular sua conta Google.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Se a sua conta ja estiver conectada ao Google, esse e o unico metodo de entrada habilitado no sistema.
+                Se quiser, conecte o Google para manter uma alternativa de entrada na sua conta.
               </p>
               {hasGoogleLinked ? (
                 <Badge>Google conectado</Badge>

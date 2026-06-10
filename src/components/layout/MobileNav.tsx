@@ -13,7 +13,7 @@ interface MobileNavProps {
 export function MobileNav({ open, onClose }: MobileNavProps) {
   return (
     <Sheet open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <SheetContent side="left" className="gap-0 p-0 w-[280px] border-r border-sidebar-border bg-sidebar">
+      <SheetContent side="left" className="gap-0 p-0 w-[280px] border-r border-sidebar-border bg-sidebar overflow-hidden">
         <SheetHeader className="border-b border-sidebar-border bg-sidebar px-4 py-3.5">
           <Link
             href="/dashboard"
@@ -27,7 +27,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
             </SheetTitle>
           </Link>
         </SheetHeader>
-        <Sidebar className="w-full border-r-0" onNavigate={onClose} showBrand={false} />
+        <Sidebar className="w-full border-r-0 min-h-0 flex-1 overflow-y-auto" onNavigate={onClose} showBrand={false} />
       </SheetContent>
     </Sheet>
   );

@@ -1,15 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { ShieldCheck, BarChart3, Sparkles } from 'lucide-react';
+import { ShieldCheck, BarChart3, Sparkles, Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { getAccessRoute } from '@/lib/access';
+import { loginSchema, type LoginSchemaType } from '@/lib/validations';
 
 const floatingDots = [
   { size: 8, top: '8%', duration: 18, delay: 0, opacity: 0.28, drift: -8 },
@@ -26,28 +32,51 @@ const floatingDots = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signInWithGoogle } = useAuth();
+  const { user, profile, loading, signInWithGoogle, signInWithEmail } = useAuth();
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginSchemaType>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  useEffect(() => {
+    if (!loading && user && profile) {
+      router.replace(getAccessRoute(profile.accessStatus));
+    }
+  }, [loading, profile, router, user]);
+
+  const handleAuthResult = (result: Awaited<ReturnType<typeof signInWithGoogle>>) => {
+    if (!result) return;
+
+    if (result.profile.accessStatus === 'approved') {
+      toast.success('Bem-vindo!');
+    } else if (result.profile.accessStatus === 'rejected') {
+      toast.error('Seu acesso foi negado pelo administrador.');
+    } else {
+      toast.warning(
+        result.isNewUser
+          ? 'Cadastro recebido! Aguarde a aprovação do administrador para acessar o sistema.'
+          : 'Seu acesso ainda está aguardando aprovação do administrador.'
+      );
+    }
+
+    router.push(getAccessRoute(result.profile.accessStatus));
+  };
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
       const result = await signInWithGoogle();
-      if (!result) return;
-
-      if (result.profile.accessStatus === 'approved') {
-        toast.success('Bem-vindo!');
-      } else if (result.profile.accessStatus === 'rejected') {
-        toast.error('Seu acesso foi negado pelo administrador.');
-      } else {
-        toast.warning(
-          result.isNewUser
-            ? 'Cadastro recebido! Aguarde a aprovação do administrador para acessar o sistema.'
-            : 'Seu acesso ainda está aguardando aprovação do administrador.'
-        );
-      }
-
-      router.push(getAccessRoute(result.profile.accessStatus));
+      handleAuthResult(result);
     } catch (error: unknown) {
       const firebaseError = error as { code?: string };
       if (firebaseError.code === 'auth/popup-closed-by-user') {
@@ -58,6 +87,12 @@ export default function LoginPage() {
         toast.error('Domínio não autorizado no Firebase Auth. Adicione este domínio em Authentication > Settings > Authorized domains.');
       } else if (firebaseError.code === 'auth/operation-not-allowed') {
         toast.error('Login com Google está desativado no Firebase. Ative o provedor Google em Authentication > Sign-in method.');
+      } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
+        toast.error('Já existe uma conta com este e-mail usando outro método. Entre com e-mail/senha ou vincule o Google no perfil.');
+      } else if (firebaseError.code === 'auth/network-request-failed') {
+        toast.error('Falha de rede ao entrar com Google. Verifique sua conexão e tente novamente.');
+      } else if (firebaseError.code === 'auth/internal-error') {
+        toast.error('Falha interna do Firebase Auth ao entrar com Google. Verifique a configuração do provedor.');
       } else if (firebaseError.code === 'auth/invalid-api-key') {
         toast.error('API Key do Firebase inválida. Verifique as variáveis NEXT_PUBLIC_FIREBASE_* do projeto.');
       } else if (firebaseError.code === 'auth/app-not-authorized') {
@@ -65,15 +100,43 @@ export default function LoginPage() {
       } else if (firebaseError.code === 'permission-denied') {
         toast.warning('Cadastro recebido! Aguarde a aprovação do administrador para acessar o sistema.');
       } else {
-        toast.error(`Erro ao entrar com Google (${firebaseError.code || 'desconhecido'}).`);
+        console.error('[Login] Google sign-in failed:', error);
+        toast.error(`Erro ao entrar com Google (${firebaseError.code || 'desconhecido'}). Veja o console para detalhes.`);
       }
     } finally {
       setIsGoogleLoading(false);
     }
   };
 
+  const onSubmit = async (data: LoginSchemaType) => {
+    setIsEmailLoading(true);
+    try {
+      const result = await signInWithEmail(data.email, data.password);
+      handleAuthResult(result);
+    } catch (error: unknown) {
+      const firebaseError = error as { code?: string };
+      if (
+        firebaseError.code === 'auth/invalid-credential' ||
+        firebaseError.code === 'auth/wrong-password' ||
+        firebaseError.code === 'auth/user-not-found'
+      ) {
+        toast.error('E-mail ou senha inválidos.');
+      } else if (firebaseError.code === 'auth/too-many-requests') {
+        toast.error('Muitas tentativas. Tente novamente daqui a pouco.');
+      } else if (firebaseError.code === 'auth/operation-not-allowed') {
+        toast.error('Login com e-mail e senha está desativado no Firebase. Ative Email/Password em Authentication > Sign-in method.');
+      } else if (firebaseError.code === 'auth/invalid-api-key') {
+        toast.error('API Key do Firebase inválida. Verifique as variáveis NEXT_PUBLIC_FIREBASE_* do projeto.');
+      } else {
+        toast.error(`Erro ao entrar (${firebaseError.code || 'desconhecido'}).`);
+      }
+    } finally {
+      setIsEmailLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-emerald-50 via-background to-amber-50">
+    <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-gradient-to-br from-emerald-50 via-background to-amber-50">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         {floatingDots.map((dot, index) => (
           <motion.span
@@ -113,7 +176,7 @@ export default function LoginPage() {
         transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
       />
 
-      <div className="relative z-10 min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-10">
+      <div className="relative z-10 min-h-[100dvh] w-full flex items-center justify-center p-4 sm:p-6 lg:p-10">
         <motion.div
           className="w-full max-w-6xl grid lg:grid-cols-2 gap-6"
           initial={{ opacity: 0, y: 16 }}
@@ -203,12 +266,52 @@ export default function LoginPage() {
                 <CardHeader>
                   <CardTitle>Entrar</CardTitle>
                   <CardDescription>
-                    O acesso ao sistema acontece exclusivamente com sua conta Google.
+                    Use e-mail e senha ou entre com sua conta Google.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-                    Ao entrar com Google pela primeira vez, seu cadastro é criado automaticamente e segue para aprovação do administrador.
+                  <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">E-mail</Label>
+                      <div className="relative">
+                        <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="email"
+                          type="email"
+                          autoComplete="email"
+                          className="pl-10"
+                          placeholder="seu@email.com"
+                          {...register('email')}
+                        />
+                      </div>
+                      {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Senha</Label>
+                      <div className="relative">
+                        <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          id="password"
+                          type="password"
+                          autoComplete="current-password"
+                          className="pl-10"
+                          placeholder="Sua senha"
+                          {...register('password')}
+                        />
+                      </div>
+                      {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+                    </div>
+
+                    <Button className="w-full" type="submit" disabled={isEmailLoading}>
+                      {isEmailLoading ? 'Entrando...' : 'Entrar com e-mail'}
+                    </Button>
+                  </form>
+
+                  <div className="relative flex items-center gap-3 text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                    <span className="h-px flex-1 bg-border" />
+                    ou
+                    <span className="h-px flex-1 bg-border" />
                   </div>
 
                   <Button
@@ -246,6 +349,13 @@ export default function LoginPage() {
                       </span>
                     )}
                   </Button>
+
+                  <p className="text-sm text-center text-muted-foreground">
+                    Ainda não tem acesso?{' '}
+                    <Link href="/register" className="font-medium text-primary hover:underline">
+                      Criar cadastro
+                    </Link>
+                  </p>
                 </CardContent>
               </Card>
             </div>

@@ -5,7 +5,10 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   signInWithRedirect,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   GoogleAuthProvider,
+  updateProfile,
   signOut as firebaseSignOut,
   User,
 } from 'firebase/auth';
@@ -33,6 +36,8 @@ interface AuthContextType {
   hasDashboardAccess: boolean;
   loading: boolean;
   signInWithGoogle: () => Promise<AuthResult | null>;
+  signInWithEmail: (email: string, password: string) => Promise<AuthResult | null>;
+  registerWithEmail: (name: string, email: string, password: string) => Promise<AuthResult | null>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<UserProfile | null>;
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -108,7 +113,9 @@ function AuthProvider({ children }: { children: ReactNode }) {
       const firebaseError = error as { code?: string };
       if (
         firebaseError.code === 'auth/popup-blocked' ||
-        firebaseError.code === 'auth/popup-closed-by-user' ||
+        firebaseError.code === 'auth/internal-error' ||
+        firebaseError.code === 'auth/network-request-failed' ||
+        firebaseError.code === 'auth/operation-not-supported-in-this-environment' ||
         firebaseError.code === 'auth/cancelled-popup-request' ||
         firebaseError.code === 'auth/web-storage-unsupported'
       ) {
@@ -120,6 +127,31 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
     return await refreshProfileState(cred.user);
   }, [refreshProfileState]);
+
+  const signInWithEmail = useCallback(
+    async (email: string, password: string) => {
+      if (!auth) {
+        throw new Error('Firebase não está configurado.');
+      }
+
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      return await refreshProfileState(cred.user);
+    },
+    [refreshProfileState]
+  );
+
+  const registerWithEmail = useCallback(
+    async (name: string, email: string, password: string) => {
+      if (!auth) {
+        throw new Error('Firebase não está configurado.');
+      }
+
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, { displayName: name });
+      return await refreshProfileState(cred.user);
+    },
+    [refreshProfileState]
+  );
 
   const signOut = useCallback(async () => {
     if (!auth) return;
@@ -170,6 +202,8 @@ function AuthProvider({ children }: { children: ReactNode }) {
         hasDashboardAccess,
         loading,
         signInWithGoogle,
+        signInWithEmail,
+        registerWithEmail,
         signOut,
         refreshProfile,
         updateUserProfile,
