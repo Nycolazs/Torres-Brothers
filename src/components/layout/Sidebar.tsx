@@ -32,6 +32,7 @@ import {
   PlugZap,
   FileUp,
   DatabaseBackup,
+  FileSignature,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,8 +48,9 @@ const mainNavItems = [
   { href: '/conciliacao-bancaria', label: 'Conciliação', icon: GitCompareArrows, hint: 'Importe OFX e concilie movimentos bancários' },
   { href: '/cobrancas', label: 'Cobranças', icon: BadgeDollarSign, hint: 'Emita e acompanhe cobranças' },
   { href: '/dre', label: 'DRE', icon: BarChart3, hint: 'Resultado do exercício por período' },
-  { href: '/notas-fiscais', label: 'Notas Fiscais', icon: FileCheck2, hint: 'Emita e acompanhe NFS-e' },
+  { href: '/notas-fiscais', label: 'Notas Fiscais', icon: FileCheck2, hint: 'Emita e acompanhe NFS-e', disabled: true },
   { href: '/notas-recebidas', label: 'Notas Recebidas', icon: FileInput, hint: 'Preparação para entrada fiscal' },
+  { href: '/propostas', label: 'Propostas Comerciais', icon: FileSignature, hint: 'Gere propostas e orçamentos em PDF com a identidade visual da empresa' },
   { href: '/relatorios', label: 'Relatórios', icon: FileText, hint: 'Exporte informações em PDF e Excel' },
   { href: '/backup', label: 'Backup', icon: DatabaseBackup, hint: 'Exporte bases financeiras completas' },
   { href: '/ajuda', label: 'Ajuda', icon: CircleHelp, hint: 'Guia rápido de uso do sistema' },
@@ -126,6 +128,24 @@ export function Sidebar({ className, onNavigate, showBrand = true }: SidebarProp
         <nav className="space-y-0.5 px-3">
           {mainNavItems.map((item) => {
             const isActive = pathname === item.href;
+            if (item.disabled) {
+              return (
+                <div
+                  key={item.href}
+                  title={`${item.hint} (Em breve / Bloqueado)`}
+                  className={cn(
+                    itemBaseClass,
+                    "opacity-50 cursor-not-allowed text-sidebar-foreground/50 hover:bg-transparent flex justify-between items-center"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    <span>{item.label}</span>
+                  </div>
+                  <span className="text-[9px] bg-sidebar-accent border border-sidebar-border px-1 py-0.5 rounded text-sidebar-foreground/60 uppercase font-bold tracking-wider">Bloqueado</span>
+                </div>
+              );
+            }
             return (
               <Link
                 key={item.href}
