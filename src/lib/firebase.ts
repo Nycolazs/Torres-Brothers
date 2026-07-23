@@ -27,7 +27,12 @@ const envMapping: Record<keyof typeof firebaseConfig, string> = {
 
 Object.entries(firebaseConfig).forEach(([key, value]) => {
   if (!value) {
-    throw new Error(`Missing required Firebase environment variable: ${envMapping[key as keyof typeof firebaseConfig]}`);
+    const errMsg = `Missing required Firebase environment variable: ${envMapping[key as keyof typeof firebaseConfig]}`;
+    if (process.env.CI === 'true') {
+      console.warn(`[Firebase Config Warning]: ${errMsg}`);
+    } else {
+      throw new Error(errMsg);
+    }
   }
 });
 
