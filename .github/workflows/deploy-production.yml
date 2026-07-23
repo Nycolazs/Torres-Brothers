@@ -19,7 +19,7 @@ jobs:
       - run: npm run test -- --run
 
       - name: Deploy Firestore rules and indexes
-        run: npx firebase deploy --only firestore --project torres-brothers --token "$FIREBASE_TOKEN"
+        run: npx -p firebase-tools firebase deploy --only firestore --project torres-brothers --token "$FIREBASE_TOKEN"
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
