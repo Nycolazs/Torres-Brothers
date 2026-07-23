@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { BriefcaseBusiness, Trash2, Edit, Plus } from 'lucide-react';
+import { BriefcaseBusiness, Trash2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

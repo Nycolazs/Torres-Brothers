@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { FileSignature, Plus, Trash2, Download, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,6 @@ export default function PropostasPage() {
   const { companyUid } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
   // Form states
   const [selectedContactId, setSelectedContactId] = useState('custom');
@@ -82,7 +81,6 @@ export default function PropostasPage() {
   useEffect(() => {
     async function load() {
       if (!companyUid) return;
-      setLoading(true);
       try {
         const [cList, sList] = await Promise.all([
           listContacts(companyUid, 'customer'),
@@ -92,8 +90,6 @@ export default function PropostasPage() {
         setServices(sList);
       } catch {
         toast.error('Erro ao carregar contatos ou serviços.');
-      } finally {
-        setLoading(false);
       }
     }
     load();
@@ -314,7 +310,7 @@ export default function PropostasPage() {
       });
 
       // Total Value Display
-      const finalY = (doc as any).lastAutoTable.finalY + 8;
+      const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(7, 22, 16);
