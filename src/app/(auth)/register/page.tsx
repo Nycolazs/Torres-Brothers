@@ -57,7 +57,7 @@ export default function RegisterPage() {
       } else if (firebaseError.code === 'auth/operation-not-allowed') {
         toast.error('Cadastro com e-mail e senha está desativado no Firebase. Ative Email/Password em Authentication > Sign-in method.');
       } else if (firebaseError.code === 'auth/invalid-api-key') {
-        toast.error('API Key do Firebase inválida. Verifique as variáveis NEXT_PUBLIC_FIREBASE_* do projeto.');
+        toast.error('API Key do Firebase inválida. Verifique a configuração do Firebase.');
       } else {
         toast.error(`Erro ao criar cadastro (${firebaseError.code || 'desconhecido'}).`);
       }

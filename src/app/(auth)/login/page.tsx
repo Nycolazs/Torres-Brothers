@@ -94,7 +94,7 @@ export default function LoginPage() {
       } else if (firebaseError.code === 'auth/internal-error') {
         toast.error('Falha interna do Firebase Auth ao entrar com Google. Verifique a configuração do provedor.');
       } else if (firebaseError.code === 'auth/invalid-api-key') {
-        toast.error('API Key do Firebase inválida. Verifique as variáveis NEXT_PUBLIC_FIREBASE_* do projeto.');
+        toast.error('API Key do Firebase inválida. Verifique a configuração do Firebase.');
       } else if (firebaseError.code === 'auth/app-not-authorized') {
         toast.error('Aplicação não autorizada no Firebase. Confira o domínio e as credenciais do projeto.');
       } else if (firebaseError.code === 'permission-denied') {
@@ -126,7 +126,7 @@ export default function LoginPage() {
       } else if (firebaseError.code === 'auth/operation-not-allowed') {
         toast.error('Login com e-mail e senha está desativado no Firebase. Ative Email/Password em Authentication > Sign-in method.');
       } else if (firebaseError.code === 'auth/invalid-api-key') {
-        toast.error('API Key do Firebase inválida. Verifique as variáveis NEXT_PUBLIC_FIREBASE_* do projeto.');
+        toast.error('API Key do Firebase inválida. Verifique a configuração do Firebase.');
       } else {
         toast.error(`Erro ao entrar (${firebaseError.code || 'desconhecido'}).`);
       }
