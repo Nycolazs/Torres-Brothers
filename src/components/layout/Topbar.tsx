@@ -104,6 +104,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
               <AvatarImage
                 src={profile?.photoUrl || user?.photoURL || undefined}
                 alt={profile?.name || 'Usuário'}
+                referrerPolicy="no-referrer"
               />
               <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                 {initials}
@@ -113,7 +114,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
           <DropdownMenuContent className="w-56" align="end">
             <div className="flex items-center gap-2 p-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={profile?.photoUrl || user?.photoURL || undefined} />
+                <AvatarImage src={profile?.photoUrl || user?.photoURL || undefined} referrerPolicy="no-referrer" />
                 <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                   {initials}
                 </AvatarFallback>

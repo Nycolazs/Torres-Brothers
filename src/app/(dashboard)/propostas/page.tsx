@@ -25,21 +25,27 @@ import autoTable from 'jspdf-autotable';
 
 interface ProposalItem {
   serviceId: string;
+  title: string;
   description: string;
+  statusFinanceiro: string;
   qty: number;
   unitPrice: number;
 }
 
 export default function PropostasPage() {
-  const { companyUid } = useAuth();
+  const { companyUid, profile } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
 
   // Form states
   const [selectedContactId, setSelectedContactId] = useState('custom');
   const [customContactName, setCustomContactName] = useState('');
+  const [networkName, setNetworkName] = useState('');
+  const [contractingName, setContractingName] = useState('');
+  const [clientCnpj, setClientCnpj] = useState('');
+  const [additionalAmount, setAdditionalAmount] = useState<number>(0);
   const [proposalDate, setProposalDate] = useState(new Date().toISOString().slice(0, 10));
-  const [validityDays, setValidityDays] = useState('15');
+  const [validityDays, setValidityDays] = useState('10');
   const [introduction, setIntroduction] = useState(
     'Agradecemos a oportunidade de apresentar nossa proposta comercial para a execução de serviços de limpeza e revitalização de pisos. Abaixo detalhamos o escopo, cronograma e valores previstos.'
   );
@@ -52,7 +58,14 @@ export default function PropostasPage() {
   );
 
   const [items, setItems] = useState<ProposalItem[]>([
-    { serviceId: '', description: '', qty: 1, unitPrice: 0 },
+    {
+      serviceId: '',
+      title: '',
+      description: '',
+      statusFinanceiro: 'Incluso no Pacote',
+      qty: 1,
+      unitPrice: 0,
+    },
   ]);
 
   // Quick service creation states
@@ -68,7 +81,9 @@ export default function PropostasPage() {
         const updated = [...items];
         updated[quickServiceIndex] = {
           serviceId: lastCreatedId,
-          description: createdService.description,
+          title: createdService.description,
+          description: createdService.notes || '',
+          statusFinanceiro: updated[quickServiceIndex].statusFinanceiro || 'Incluso no Pacote',
           qty: updated[quickServiceIndex].qty,
           unitPrice: createdService.defaultAmount || 0,
         };
@@ -95,11 +110,36 @@ export default function PropostasPage() {
     load();
   }, [companyUid]);
 
+  // Load saved general conditions from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedPaymentTerms = localStorage.getItem('tb_proposal_payment_terms');
+      const savedExecutionTime = localStorage.getItem('tb_proposal_execution_time');
+      const savedObservations = localStorage.getItem('tb_proposal_observations');
+
+      if (savedPaymentTerms) setPaymentTerms(savedPaymentTerms);
+      if (savedExecutionTime) setExecutionTime(savedExecutionTime);
+      if (savedObservations) setObservations(savedObservations);
+    }
+  }, []);
+
   const clients = useMemo(() => contacts.filter((c) => c.type === 'customer' || c.type === 'both'), [contacts]);
+
+  // Auto-fill client CNPJ when a catalog client is selected
+  useEffect(() => {
+    if (selectedContactId !== 'custom') {
+      const client = clients.find((c) => c.id === selectedContactId);
+      if (client?.document) {
+        setClientCnpj(client.document);
+      } else {
+        setClientCnpj('');
+      }
+    }
+  }, [selectedContactId, clients]);
 
   // Handle items list change
   const handleAddItem = () => {
-    setItems([...items, { serviceId: '', description: '', qty: 1, unitPrice: 0 }]);
+    setItems([...items, { serviceId: '', title: '', description: '', statusFinanceiro: 'Incluso no Pacote', qty: 1, unitPrice: 0 }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -113,14 +153,21 @@ export default function PropostasPage() {
 
     if (field === 'serviceId') {
       const sId = value as string;
-      item.serviceId = sId;
-      const service = services.find((s) => s.id === sId);
-      if (service) {
-        item.description = service.description;
-        item.unitPrice = service.defaultAmount || 0;
+      item.serviceId = sId === 'none' ? '' : sId;
+      if (sId !== 'none') {
+        const service = services.find((s) => s.id === sId);
+        if (service) {
+          item.title = service.description;
+          item.description = service.notes || '';
+          item.unitPrice = service.defaultAmount || 0;
+        }
       }
+    } else if (field === 'title') {
+      item.title = value as string;
     } else if (field === 'description') {
       item.description = value as string;
+    } else if (field === 'statusFinanceiro') {
+      item.statusFinanceiro = value as string;
     } else if (field === 'qty') {
       item.qty = Math.max(1, Number(value));
     } else if (field === 'unitPrice') {
@@ -132,8 +179,9 @@ export default function PropostasPage() {
   };
 
   const totalAmount = useMemo(() => {
-    return items.reduce((acc, curr) => acc + curr.qty * curr.unitPrice, 0);
-  }, [items]);
+    const itemsSum = items.reduce((acc, curr) => acc + curr.qty * curr.unitPrice, 0);
+    return itemsSum + (Number(additionalAmount) || 0);
+  }, [items, additionalAmount]);
 
   const clientName = useMemo(() => {
     if (selectedContactId === 'custom') return customContactName;
@@ -166,10 +214,71 @@ export default function PropostasPage() {
     try {
       const doc = new jsPDF('p', 'mm', 'a4');
       const logoBase64 = await getBase64ImageFromUrl('/logo.png');
+      const qrBase64 = await getBase64ImageFromUrl('/whatsapp-qr.png');
+
+      const drawPageDecorations = () => {
+        // --- CURVED HEADER WAVES ---
+        // Ellipse 1 (Light background wave)
+        doc.setFillColor(240, 245, 242);
+        doc.ellipse(130, 10, 160, 45, 'F');
+        
+        // Ellipse 2 (Gold accent wave)
+        doc.setFillColor(200, 169, 110); // #c8a96e (Torres Brothers Gold)
+        doc.ellipse(160, 0, 140, 45, 'F');
+        
+        // Ellipse 3 (Dark Green main wave)
+        doc.setFillColor(7, 22, 16); // #071610 (Torres Brothers Dark Green)
+        doc.ellipse(70, -10, 150, 55, 'F');
+
+        // Logo & Company Name on the left
+        if (logoBase64) {
+          doc.addImage(logoBase64, 'PNG', 15, 8, 12, 12);
+        }
+        doc.setFont('times', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(255, 255, 255);
+        doc.text('TORRES BROTHERS', 30, 14);
+        doc.setFont('times', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(200, 169, 110);
+        doc.text('LIMPEZA E REVITALIZAÇÃO DE PISOS', 30, 18);
+
+        // Header Contact Info (Right side)
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(200, 169, 110);
+        doc.text('Telefone:', 135, 10);
+        doc.setTextColor(255, 255, 255);
+        doc.text('(41) 98716-4811', 135, 13);
+        
+        doc.setTextColor(200, 169, 110);
+        doc.text('E-mail / Web:', 170, 10);
+        doc.setTextColor(255, 255, 255);
+        doc.text('torresbrothers.com.br', 170, 13);
+
+        // WhatsApp QR Code
+        if (qrBase64) {
+          doc.addImage(qrBase64, 'PNG', 170, 15.5, 11, 11);
+        }
+        
+        doc.setTextColor(200, 169, 110);
+        doc.text('Localização:', 135, 19);
+        doc.setTextColor(255, 255, 255);
+        doc.text('Curitiba - PR', 135, 22);
+
+        // Footer Line
+        doc.setDrawColor(220, 225, 222);
+        doc.setLineWidth(0.3);
+        doc.line(15, 285, 195, 285);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(120, 120, 120);
+        doc.text('Torres Brothers — Limpeza e revitalização de pisos. Curitiba/PR', 105, 290, { align: 'center' });
+      };
 
       // --- PAGE 1: COVER PAGE (GREEN) ---
-      // Background colors (Dark Green theme matching landing page)
-      doc.setFillColor(7, 22, 16); // #071610
+      // Background color: #071610 (Torres Brothers Dark Green)
+      doc.setFillColor(7, 22, 16);
       doc.rect(0, 0, 210, 297, 'F');
 
       // Decorative Gold border
@@ -180,25 +289,29 @@ export default function PropostasPage() {
 
       // Logo on Cover
       if (logoBase64) {
-        // center logo
         doc.addImage(logoBase64, 'PNG', 85, 55, 40, 40);
       }
 
       // Title & Subtitle on Cover
-      doc.setTextColor(243, 230, 203); // #f3e6cb (Light cream/gold)
+      doc.setTextColor(243, 230, 203); // Light gold
       doc.setFont('times', 'bold');
       doc.setFontSize(26);
       doc.text('TORRES BROTHERS', 105, 115, { align: 'center' });
 
       doc.setFont('times', 'normal');
       doc.setFontSize(10);
-      doc.setTextColor(200, 169, 110); // #c8a96e (Gold)
+      doc.setTextColor(200, 169, 110);
       doc.text('LIMPEZA E REVITALIZAÇÃO DE PISOS', 105, 123, { align: 'center' });
+
+      // CNPJ on Cover
+      const companyCnpj = profile?.companyDocument || '55.334.821/0001-08';
+      doc.setFontSize(8.5);
+      doc.text(`CNPJ: ${companyCnpj}`, 105, 128, { align: 'center' });
 
       // Gold Separator Line
       doc.setDrawColor(200, 169, 110);
       doc.setLineWidth(0.5);
-      doc.line(70, 130, 140, 130);
+      doc.line(70, 134, 140, 134);
 
       // Proposal Cover Text
       doc.setTextColor(255, 255, 255);
@@ -207,177 +320,230 @@ export default function PropostasPage() {
       doc.text('PROPOSTA COMERCIAL', 105, 165, { align: 'center' });
 
       // Client Box
-      doc.setFillColor(11, 36, 24); // #0b2418 (Medium Green)
-      doc.rect(30, 185, 150, 60, 'F');
-      doc.rect(30, 185, 150, 60, 'S');
+      doc.setFillColor(11, 36, 24); // Medium Green #0b2418
+      doc.rect(30, 180, 150, 72, 'F');
+      doc.rect(30, 180, 150, 72, 'S');
 
+      // Let's structure the fields cleanly:
+      let startBoxY = 191;
+
+      // 1. Cliente
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      doc.setTextColor(200, 169, 110);
-      doc.text('CLIENTE:', 40, 200);
-      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8.5);
+      doc.setTextColor(200, 169, 110); // Gold
+      doc.text('CLIENTE:', 40, startBoxY);
       doc.setFont('helvetica', 'bold');
-      doc.text(clientName.toUpperCase(), 40, 207);
+      doc.setFontSize(10.5);
+      doc.setTextColor(255, 255, 255); // White
+      doc.text(clientName.toUpperCase(), 40, startBoxY + 4.5);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(200, 169, 110);
-      doc.text('DATA DE EMISSÃO:', 40, 222);
-      doc.setTextColor(255, 255, 255);
-      doc.text(new Date(`${proposalDate}T00:00:00`).toLocaleDateString('pt-BR'), 40, 229);
+      startBoxY += 12.5;
 
+      // 2. Representante (if filled)
+      if (contractingName) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(200, 169, 110);
+        doc.text('REPRESENTANTE:', 40, startBoxY);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10.5);
+        doc.setTextColor(255, 255, 255);
+        doc.text(contractingName.toUpperCase(), 40, startBoxY + 4.5);
+        startBoxY += 12.5;
+      }
+
+      // 3. CNPJ (if filled)
+      if (clientCnpj) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(200, 169, 110);
+        doc.text('CNPJ DO CLIENTE:', 40, startBoxY);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10.5);
+        doc.setTextColor(255, 255, 255);
+        doc.text(clientCnpj, 40, startBoxY + 4.5);
+        startBoxY += 12.5;
+      }
+
+      // 4. Emission and Validity side by side
+      // Left side: Emissão
       doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
       doc.setTextColor(200, 169, 110);
-      doc.text('VALIDADE DA PROPOSTA:', 110, 222);
+      doc.text('DATA DE EMISSÃO:', 40, startBoxY);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
       doc.setTextColor(255, 255, 255);
-      doc.text(`${validityDays} dias`, 110, 229);
+      doc.text(new Date(`${proposalDate}T00:00:00`).toLocaleDateString('pt-BR'), 40, startBoxY + 4.5);
+
+      // Right side: Validade
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(200, 169, 110);
+      doc.text('VALIDADE DA PROPOSTA:', 110, startBoxY);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(`${validityDays} dias`, 110, startBoxY + 4.5);
 
       // Cover Footer
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.setTextColor(143, 179, 163); // #8fb3a3
+      doc.setTextColor(143, 179, 163);
       doc.text('Curitiba e região · WhatsApp: (41) 98716-4811', 105, 275, { align: 'center' });
 
       // --- PAGE 2: DETAILS ---
       doc.addPage();
 
-      // Page 2 Background Accent (White background with gold/green details)
-      doc.setFillColor(255, 255, 255);
-      doc.rect(0, 0, 210, 297, 'F');
+      // Draw decorations for page 2
+      drawPageDecorations();
 
-      // Inner page border (subtle)
-      doc.setDrawColor(230, 235, 232);
-      doc.setLineWidth(0.3);
-      doc.rect(10, 10, 190, 277, 'S');
-
-      // Inner page header
-      if (logoBase64) {
-        doc.addImage(logoBase64, 'PNG', 14, 15, 14, 14);
-      }
-      doc.setFont('times', 'bold');
-      doc.setFontSize(14);
-      doc.setTextColor(7, 22, 16);
-      doc.text('TORRES BROTHERS', 32, 21);
-      doc.setFont('times', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(200, 169, 110);
-      doc.text('LIMPEZA E REVITALIZAÇÃO DE PISOS', 32, 25);
-
-      // Gold rule under header
-      doc.setDrawColor(200, 169, 110);
-      doc.setLineWidth(0.5);
-      doc.line(14, 32, 196, 32);
-
-      // Page Title
+      // --- CLIENT & DOCUMENT INFO SECTION ---
+      // Left side: Client Info
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(120, 120, 120);
+      doc.text('APRESENTADO A:', 15, 48);
+      
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(13);
       doc.setTextColor(7, 22, 16);
-      doc.text('DETALHAMENTO DA PROPOSTA', 14, 42);
-
-      // Introduction paragraph
+      
+      const primaryDisplayName = contractingName ? contractingName.toUpperCase() : clientName.toUpperCase();
+      doc.text(primaryDisplayName, 15, 54);
+      
+      let clientInfoY = 59;
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+
+      if (networkName) {
+        doc.text(`Rede: ${networkName}`, 15, clientInfoY);
+        clientInfoY += 4.5;
+      }
+      if (contractingName) {
+        doc.text(`Contratante: ${clientName}`, 15, clientInfoY);
+        clientInfoY += 4.5;
+      }
+
+      // Right side: Document Details
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(7, 22, 16);
+      doc.text('PROPOSTA', 135, 48);
+      
+      doc.setFontSize(9.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Data de Emissão: ${new Date(`${proposalDate}T00:00:00`).toLocaleDateString('pt-BR')}`, 135, 54);
+      doc.text(`Validade da Proposta: ${validityDays} dias`, 135, 59);
+
+      // --- INTRODUCTION PARAGRAPH ---
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.5);
+      doc.setTextColor(80, 80, 80);
       const splitIntro = doc.splitTextToSize(introduction, 180);
-      doc.text(splitIntro, 14, 49);
+      const introY = Math.max(68, clientInfoY + 4);
+      doc.text(splitIntro, 15, introY);
 
-      // Table of items
-      const tableHeaders = ['Item', 'Serviço / Descrição', 'Qtd', 'Val. Unit.', 'Total'];
-      const tableRows = items.map((item, index) => [
-        String(index + 1).padStart(2, '0'),
-        item.description || 'Serviço personalizado',
-        String(item.qty),
-        formatCurrency(item.unitPrice),
-        formatCurrency(item.qty * item.unitPrice),
+      const tableStartY = introY + (splitIntro.length * 4.5) + 6;
+
+      // --- SERVICES & VALUES TABLE ---
+      const tableHeaders = ['ITEM / ETAPA', 'DESCRIÇÃO DO ESCOPO TÉCNICO', 'STATUS FINANCEIRO'];
+      const tableRows = items.map((item) => [
+        item.title || 'Serviço personalizado',
+        item.description || '',
+        item.statusFinanceiro || 'Incluso no Pacote',
       ]);
-
-      const startY = 49 + (splitIntro.length * 5) + 8;
 
       autoTable(doc, {
         head: [tableHeaders],
         body: tableRows,
-        startY: startY,
+        startY: tableStartY,
         theme: 'grid',
-        styles: { fontSize: 9, cellPadding: 3, font: 'helvetica' },
-        headStyles: { fillColor: [7, 22, 16], textColor: 255, fontStyle: 'bold' },
-        columnStyles: {
-          0: { cellWidth: 15, halign: 'center' },
-          1: { cellWidth: 102 },
-          2: { cellWidth: 15, halign: 'center' },
-          3: { cellWidth: 25, halign: 'right' },
-          4: { cellWidth: 25, halign: 'right' },
+        styles: { fontSize: 8.2, cellPadding: 3.5, font: 'helvetica' },
+        didParseCell: function (data) {
+          if (data.section === 'head') {
+            if (data.column.index <= 1) {
+              // Item / Etapa and Descrição headers: Gold background, Dark Green text
+              data.cell.styles.fillColor = [200, 169, 110];
+              data.cell.styles.textColor = [7, 22, 16];
+            } else {
+              // Status Financeiro header: Dark Green background, white text
+              data.cell.styles.fillColor = [7, 22, 16];
+              data.cell.styles.textColor = [255, 255, 255];
+            }
+          }
         },
-        alternateRowStyles: { fillColor: [248, 250, 248] },
+        columnStyles: {
+          0: { cellWidth: 50, fontStyle: 'bold' },
+          1: { cellWidth: 95 },
+          2: { cellWidth: 35, halign: 'center', fontStyle: 'bold' },
+        },
+        alternateRowStyles: { fillColor: [246, 249, 247] },
       });
 
-      // Total Value Display
-      const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
+      const finalY = (doc as any).lastAutoTable.finalY + 8;
+
+      // Grand Total Gold Bar
+      doc.setFillColor(200, 169, 110); // Gold
+      doc.rect(100, finalY, 95, 10, 'F');
+      
       doc.setTextColor(7, 22, 16);
-      doc.text(`VALOR TOTAL DO INVESTIMENTO: ${formatCurrency(totalAmount)}`, 14, finalY);
-
-      // Divider
-      doc.setDrawColor(230, 235, 232);
-      doc.setLineWidth(0.3);
-      doc.line(14, finalY + 4, 196, finalY + 4);
-
-      // Terms & Conditions Block
-      let termsY = finalY + 12;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10);
+      doc.text('VALOR TOTAL', 103, finalY + 6.5);
+      doc.text(formatCurrency(totalAmount), 192, finalY + 6.5, { align: 'right' });
+
+      // --- PAYMENT INFO & TERMS SECTION (BOTTOM LEFT) ---
+      const infoY = finalY + 22;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
       doc.setTextColor(7, 22, 16);
-      doc.text('CONDIÇÕES COMERCIAIS', 14, termsY);
+      doc.text('CONDIÇÕES COMERCIAIS', 15, infoY);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(60, 60, 60);
-
-      termsY += 5;
       doc.setFont('helvetica', 'bold');
-      doc.text('Prazo de Execução: ', 14, termsY);
+      doc.setFontSize(8.5);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Prazo de Execução:', 15, infoY + 6);
       doc.setFont('helvetica', 'normal');
-      doc.text(executionTime, 48, termsY);
+      const executionSplit = doc.splitTextToSize(executionTime, 80);
+      doc.text(executionSplit, 15, infoY + 10);
 
-      termsY += 5;
+      const nextY = infoY + 14 + (executionSplit.length * 4);
       doc.setFont('helvetica', 'bold');
-      doc.text('Forma de Pagamento: ', 14, termsY);
+      doc.text('Forma de Pagamento:', 15, nextY);
       doc.setFont('helvetica', 'normal');
-      const splitPayment = doc.splitTextToSize(paymentTerms, 140);
-      doc.text(splitPayment, 50, termsY);
+      const paymentSplit = doc.splitTextToSize(paymentTerms, 80);
+      doc.text(paymentSplit, 15, nextY + 4);
 
-      termsY += splitPayment.length * 4.5 + 2;
+      const obsY = nextY + 8 + (paymentSplit.length * 4);
       doc.setFont('helvetica', 'bold');
-      doc.text('Observações e Requisitos:', 14, termsY);
+      doc.text('Observações:', 15, obsY);
       doc.setFont('helvetica', 'normal');
-      const splitObs = doc.splitTextToSize(observations, 180);
-      doc.text(splitObs, 14, termsY + 5);
+      const obsSplit = doc.splitTextToSize(observations, 80);
+      doc.text(obsSplit, 15, obsY + 4);
 
-      // Signatures at the bottom
-      const signatureY = 250;
+      // --- SIGNATURE SECTION (BOTTOM RIGHT - STACKED) ---
       doc.setDrawColor(180, 180, 180);
-      doc.setLineWidth(0.5);
-      
-      // Torres Brothers signature line
-      doc.line(20, signatureY, 90, signatureY);
+      doc.setLineWidth(0.4);
+
+      // 1. Torres Brothers Representative signature line (Upper)
+      const sigRepY = 238;
+      doc.line(125, sigRepY, 195, sigRepY);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
       doc.setTextColor(7, 22, 16);
-      doc.text('TORRES BROTHERS', 55, signatureY + 4, { align: 'center' });
+      doc.text('TORRES BROTHERS', 160, sigRepY + 4, { align: 'center' });
       doc.setFont('helvetica', 'normal');
-      doc.text('Responsável Técnico', 55, signatureY + 8, { align: 'center' });
+      doc.text('Responsável Técnico', 160, sigRepY + 8, { align: 'center' });
 
-      // Client signature line
-      doc.line(120, signatureY, 190, signatureY);
+      // 2. Client signature line (Lower - below the representative signature)
+      const sigClientY = 265;
+      doc.line(125, sigClientY, 195, sigClientY);
       doc.setFont('helvetica', 'bold');
-      doc.text(clientName.toUpperCase(), 155, signatureY + 4, { align: 'center' });
-      doc.setFont('helvetica', 'normal');
-      doc.text('Aceite do Cliente', 155, signatureY + 8, { align: 'center' });
-
-      // Footer
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(140, 140, 140);
-      doc.text('Torres Brothers — Limpeza e revitalização de pisos. Curitiba/PR', 105, 282, { align: 'center' });
+      const signerName = contractingName ? contractingName.toUpperCase() : clientName.toUpperCase();
+      doc.text(signerName, 160, sigClientY + 4, { align: 'center' });
 
       // Save document
       const normalizedClientName = clientName.toLowerCase().replace(/\s+/g, '-');
@@ -452,6 +618,33 @@ export default function PropostasPage() {
                   <Label>Dias de Validade</Label>
                   <Input type="number" value={validityDays} onChange={(e) => setValidityDays(e.target.value)} />
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Rede <span className="text-xs text-muted-foreground font-normal">(Opcional)</span></Label>
+                  <Input
+                    value={networkName}
+                    onChange={(e) => setNetworkName(e.target.value)}
+                    placeholder="Ex: Rede de Lojas X"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Representante <span className="text-xs text-muted-foreground font-normal">(Opcional)</span></Label>
+                  <Input
+                    value={contractingName}
+                    onChange={(e) => setContractingName(e.target.value)}
+                    placeholder="Ex: Cledivilson"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>CNPJ do Cliente <span className="text-xs text-muted-foreground font-normal">(Opcional)</span></Label>
+                  <Input
+                    value={clientCnpj}
+                    onChange={(e) => setClientCnpj(e.target.value)}
+                    placeholder="Ex: 00.000.000/0000-00"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -477,95 +670,129 @@ export default function PropostasPage() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {items.map((item, index) => (
-                  <div key={index} className="flex flex-col md:flex-row gap-3 items-start md:items-end border-b pb-4 md:border-b-0 md:pb-0">
-                    <div className="w-full md:w-[220px] space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs">Buscar do Catálogo</Label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setQuickServiceIndex(index);
-                            setServiceModalOpen(true);
-                          }}
-                          className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-0.5 cursor-pointer"
+                  <div key={index} className="flex flex-col gap-3 border-b pb-4 mb-4 last:border-b-0 last:pb-0 last:mb-0">
+                    <div className="flex flex-col md:flex-row gap-3 items-start md:items-end w-full">
+                      {/* Buscar do Catálogo */}
+                      <div className="w-full md:w-[180px] space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs">Buscar do Catálogo</Label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setQuickServiceIndex(index);
+                              setServiceModalOpen(true);
+                            }}
+                            className="text-[11px] text-primary hover:underline font-semibold flex items-center gap-0.5 cursor-pointer"
+                          >
+                            + Novo
+                          </button>
+                        </div>
+                        <Select
+                          value={item.serviceId || 'none'}
+                          onValueChange={(val) => handleItemChange(index, 'serviceId', val || '')}
                         >
-                          + Novo
-                        </button>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Avulso / Não vinculado">
+                              {services.find((s) => s.id === item.serviceId)?.description || 'Avulso / Não vinculado'}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">-- Avulso (Não vinculado) --</SelectItem>
+                            {services.length > 0 &&
+                              services.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  {s.description}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <Select
-                        value={item.serviceId}
-                        onValueChange={(val) => handleItemChange(index, 'serviceId', val || '')}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um serviço">
-                            {services.find((s) => s.id === item.serviceId)?.description || ''}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {services.length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              Nenhum serviço cadastrado
-                            </SelectItem>
-                          ) : (
-                            services.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {s.description}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+
+                      {/* Item / Etapa */}
+                      <div className="flex-1 w-full space-y-1">
+                        <Label className="text-xs">Item / Etapa</Label>
+                        <Input
+                          value={item.title}
+                          onChange={(e) => handleItemChange(index, 'title', e.target.value)}
+                          placeholder="Ex: 01. Lavagem Técnica"
+                        />
+                      </div>
+
+                      {/* Status Financeiro */}
+                      <div className="w-full md:w-[150px] space-y-1">
+                        <Label className="text-xs">Status Financeiro</Label>
+                        <Input
+                          value={item.statusFinanceiro}
+                          onChange={(e) => handleItemChange(index, 'statusFinanceiro', e.target.value)}
+                          placeholder="Ex: Incluso no Pacote"
+                        />
+                      </div>
+
+                      {/* Qtd */}
+                      <div className="w-full md:w-[70px] space-y-1">
+                        <Label className="text-xs">Qtd</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={item.qty}
+                          onChange={(e) => handleItemChange(index, 'qty', e.target.value)}
+                        />
+                      </div>
+
+                      {/* Preço Unit. */}
+                      <div className="w-full md:w-[110px] space-y-1">
+                        <Label className="text-xs">Preço Unit. (R$)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={item.unitPrice || ''}
+                          onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                          placeholder="0,00"
+                        />
+                      </div>
+
+                      {/* Remove Button */}
+                      <div className="pt-2 md:pt-0">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive cursor-pointer"
+                          disabled={items.length === 1}
+                          onClick={() => handleRemoveItem(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
 
-                    <div className="flex-1 w-full space-y-1">
-                      <Label className="text-xs">Descrição na Proposta</Label>
-                      <Input
+                    {/* Descrição do Escopo Técnico */}
+                    <div className="w-full space-y-1">
+                      <Label className="text-xs">Descrição do Escopo Técnico</Label>
+                      <Textarea
                         value={item.description}
                         onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                        placeholder="Descreva o serviço para o cliente"
+                        placeholder="Descreva o escopo técnico detalhado deste item"
+                        rows={2}
                       />
-                    </div>
-
-                    <div className="w-[80px] space-y-1">
-                      <Label className="text-xs">Qtd</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.qty}
-                        onChange={(e) => handleItemChange(index, 'qty', e.target.value)}
-                      />
-                    </div>
-
-                    <div className="w-[120px] space-y-1">
-                      <Label className="text-xs">Preço Unit. (R$)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={item.unitPrice || ''}
-                        onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                        placeholder="0,00"
-                      />
-                    </div>
-
-                    <div className="pt-2 md:pt-0">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive cursor-pointer"
-                        disabled={items.length === 1}
-                        onClick={() => handleRemoveItem(index)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex justify-end pt-4 border-t text-right">
-                <div>
+              <div className="flex flex-col md:flex-row justify-between items-end gap-4 pt-4 border-t">
+                <div className="w-full md:w-[220px] space-y-1 text-left">
+                  <Label className="text-xs">Valor Previsto Adicional (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={additionalAmount || ''}
+                    onChange={(e) => setAdditionalAmount(Math.max(0, Number(e.target.value)))}
+                    placeholder="0,00"
+                  />
+                </div>
+                <div className="text-right">
                   <span className="text-sm text-muted-foreground block">Valor Total Previsto</span>
                   <span className="text-2xl font-bold text-primary">{formatCurrency(totalAmount)}</span>
                 </div>
@@ -585,7 +812,10 @@ export default function PropostasPage() {
                   <Label>Prazo de Execução</Label>
                   <Input
                     value={executionTime}
-                    onChange={(e) => setExecutionTime(e.target.value)}
+                    onChange={(e) => {
+                      setExecutionTime(e.target.value);
+                      localStorage.setItem('tb_proposal_execution_time', e.target.value);
+                    }}
                     placeholder="Ex: 3 dias úteis após assinatura"
                   />
                 </div>
@@ -594,7 +824,10 @@ export default function PropostasPage() {
                   <Label>Condições de Pagamento</Label>
                   <Input
                     value={paymentTerms}
-                    onChange={(e) => setPaymentTerms(e.target.value)}
+                    onChange={(e) => {
+                      setPaymentTerms(e.target.value);
+                      localStorage.setItem('tb_proposal_payment_terms', e.target.value);
+                    }}
                     placeholder="Ex: 50% entrada, 50% conclusão"
                   />
                 </div>
@@ -604,7 +837,10 @@ export default function PropostasPage() {
                 <Label>Requisitos e Observações</Label>
                 <Textarea
                   value={observations}
-                  onChange={(e) => setObservations(e.target.value)}
+                  onChange={(e) => {
+                    setObservations(e.target.value);
+                    localStorage.setItem('tb_proposal_observations', e.target.value);
+                  }}
                   rows={4}
                 />
               </div>
@@ -641,7 +877,7 @@ export default function PropostasPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-[#c8a96e] shrink-0" />
-                    Tabela de serviços e valores (estilo MarketUP)
+                    Tabela de serviços e valores
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-[#c8a96e] shrink-0" />

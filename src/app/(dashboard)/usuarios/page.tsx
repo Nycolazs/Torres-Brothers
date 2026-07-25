@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/table';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { TableSkeleton } from '@/components/shared/LoadingSkeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { USER_ACCESS_STATUS_LABELS, USER_ROLE_LABELS } from '@/constants';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDate } from '@/lib/utils';
@@ -182,12 +183,22 @@ export default function UsuariosPage() {
                   key={pendingUser.uid}
                   className="flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between"
                 >
-                  <div>
-                    <p className="font-medium">{pendingUser.name}</p>
-                    <p className="text-sm text-muted-foreground">{pendingUser.email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Cadastro em {formatDate(pendingUser.createdAt)}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={pendingUser.photoUrl} alt={pendingUser.name} referrerPolicy="no-referrer" />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                        {pendingUser.name
+                          ? pendingUser.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+                          : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{pendingUser.name}</p>
+                      <p className="text-sm text-muted-foreground">{pendingUser.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Cadastro em {formatDate(pendingUser.createdAt)}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex gap-2">
@@ -250,7 +261,19 @@ export default function UsuariosPage() {
 
                   return (
                     <TableRow key={listedUser.uid}>
-                      <TableCell className="font-medium">{listedUser.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={listedUser.photoUrl} alt={listedUser.name} referrerPolicy="no-referrer" />
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                              {listedUser.name
+                                ? listedUser.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+                                : 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{listedUser.name}</span>
+                        </div>
+                      </TableCell>
                       <TableCell>{listedUser.email}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">
