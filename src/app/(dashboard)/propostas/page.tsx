@@ -32,6 +32,12 @@ interface ProposalItem {
   unitPrice: number;
 }
 
+interface JsPDFWithAutoTable extends jsPDF {
+  lastAutoTable?: {
+    finalY: number;
+  };
+}
+
 export default function PropostasPage() {
   const { companyUid, profile } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -49,13 +55,24 @@ export default function PropostasPage() {
   const [introduction, setIntroduction] = useState(
     'Agradecemos a oportunidade de apresentar nossa proposta comercial para a execução de serviços de limpeza e revitalização de pisos. Abaixo detalhamos o escopo, cronograma e valores previstos.'
   );
-  const [paymentTerms, setPaymentTerms] = useState(
-    'Sinal de 50% na aprovação e 50% após a conclusão e entrega dos serviços.'
-  );
-  const [executionTime, setExecutionTime] = useState('A combinar conforme cronograma do cliente.');
-  const [observations, setObservations] = useState(
-    '1. A contratante deverá disponibilizar pontos de água e energia elétrica (220v/110v).\n2. O local deve estar desimpedido para a realização do serviço.'
-  );
+  const [paymentTerms, setPaymentTerms] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('tb_proposal_payment_terms') || 'Sinal de 50% na aprovação e 50% após a conclusão e entrega dos serviços.';
+    }
+    return 'Sinal de 50% na aprovação e 50% após a conclusão e entrega dos serviços.';
+  });
+  const [executionTime, setExecutionTime] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('tb_proposal_execution_time') || 'A combinar conforme cronograma do cliente.';
+    }
+    return 'A combinar conforme cronograma do cliente.';
+  });
+  const [observations, setObservations] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('tb_proposal_observations') || '1. A contratante deverá disponibilizar pontos de água e energia elétrica (220v/110v).\n2. O local deve estar desimpedido para a realização do serviço.';
+    }
+    return '1. A contratante deverá disponibilizar pontos de água e energia elétrica (220v/110v).\n2. O local deve estar desimpedido para a realização do serviço.';
+  });
 
   const [items, setItems] = useState<ProposalItem[]>([
     {
@@ -110,32 +127,18 @@ export default function PropostasPage() {
     load();
   }, [companyUid]);
 
-  // Load saved general conditions from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedPaymentTerms = localStorage.getItem('tb_proposal_payment_terms');
-      const savedExecutionTime = localStorage.getItem('tb_proposal_execution_time');
-      const savedObservations = localStorage.getItem('tb_proposal_observations');
-
-      if (savedPaymentTerms) setPaymentTerms(savedPaymentTerms);
-      if (savedExecutionTime) setExecutionTime(savedExecutionTime);
-      if (savedObservations) setObservations(savedObservations);
-    }
-  }, []);
-
   const clients = useMemo(() => contacts.filter((c) => c.type === 'customer' || c.type === 'both'), [contacts]);
 
-  // Auto-fill client CNPJ when a catalog client is selected
-  useEffect(() => {
-    if (selectedContactId !== 'custom') {
-      const client = clients.find((c) => c.id === selectedContactId);
-      if (client?.document) {
-        setClientCnpj(client.document);
-      } else {
-        setClientCnpj('');
-      }
+  const handleContactChange = (val: string | null) => {
+    const contactId = val || 'custom';
+    setSelectedContactId(contactId);
+    if (contactId !== 'custom') {
+      const client = clients.find((c) => c.id === contactId);
+      setClientCnpj(client?.document || '');
+    } else {
+      setClientCnpj('');
     }
-  }, [selectedContactId, clients]);
+  };
 
   // Handle items list change
   const handleAddItem = () => {
@@ -483,7 +486,7 @@ export default function PropostasPage() {
         alternateRowStyles: { fillColor: [246, 249, 247] },
       });
 
-      const finalY = (doc as any).lastAutoTable.finalY + 8;
+      const finalY = ((doc as JsPDFWithAutoTable).lastAutoTable?.finalY || 80) + 8;
 
       // Grand Total Gold Bar
       doc.setFillColor(200, 169, 110); // Gold
@@ -581,7 +584,7 @@ export default function PropostasPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Cliente</Label>
-                  <Select value={selectedContactId} onValueChange={(val) => setSelectedContactId(val || '')}>
+                  <Select value={selectedContactId} onValueChange={handleContactChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um cliente">
                         {selectedContactId === 'custom' ? 'Cliente Personalizado / Avulso' : (clients.find((c) => c.id === selectedContactId)?.name || '')}
