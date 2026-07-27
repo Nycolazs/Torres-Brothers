@@ -714,9 +714,6 @@ export default function PropostasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Propostas & Orçamentos</h1>
-          <p className="text-sm text-muted-foreground">
-            Gere propostas comerciais profissionais em PDF usando a identidade visual oficial (Verde e Ouro)
-          </p>
         </div>
         <Button onClick={handleNewProposal} size="sm" variant="outline" className="cursor-pointer">
           <Plus className="h-4 w-4 mr-1" /> Nova Proposta
@@ -1023,32 +1020,6 @@ export default function PropostasPage() {
                 <Save className="h-5 w-5 mr-2" />
                 Salvar Proposta
               </Button>
-
-              <div className="border-t pt-4 space-y-3">
-                <h4 className="text-sm font-semibold">Estrutura do PDF Branded:</h4>
-                <ul className="space-y-2 text-xs text-muted-foreground">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-[#c8a96e] shrink-0" />
-                    Pág 1: Capa Verde Oficial da Torres Brothers
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-[#c8a96e] shrink-0" />
-                    Capa com Logo centralizado e detalhes em Ouro
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-[#c8a96e] shrink-0" />
-                    Pág 2+: Detalhamento estruturado e limpo com quebra de página automática
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-[#c8a96e] shrink-0" />
-                    Tabela de serviços e valores
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-[#c8a96e] shrink-0" />
-                    Rodapé e assinatura formal
-                  </li>
-                </ul>
-              </div>
             </CardContent>
           </Card>
 
