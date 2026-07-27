@@ -620,6 +620,15 @@ export async function saveProviderSetting(
 
 // ── Proposals ─────────────────────────────────────────────────────
 
+export interface ProposalItem {
+  serviceId: string;
+  title: string;
+  description: string;
+  statusFinanceiro: string;
+  qty: number;
+  unitPrice: number;
+}
+
 export interface Proposal {
   id?: string;
   title: string;
@@ -635,8 +644,8 @@ export interface Proposal {
   paymentTerms: string;
   executionTime: string;
   observations: string;
-  items: any[];
-  createdAt: any;
+  items: ProposalItem[];
+  createdAt: string | Timestamp;
 }
 
 export async function listProposals(uid: string): Promise<Proposal[]> {

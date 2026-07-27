@@ -177,7 +177,7 @@ export default function PropostasPage() {
         const service = services.find((s) => s.id === sId);
         if (service) {
           item.title = service.description;
-          item.description = service.notes || '',
+          item.description = service.notes || '';
           item.unitPrice = service.defaultAmount || 0;
         }
       }
