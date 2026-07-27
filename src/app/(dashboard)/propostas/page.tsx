@@ -59,12 +59,9 @@ export default function PropostasPage() {
   );
   const [paymentTerms, setPaymentTerms] = useState('');
   const [executionTime, setExecutionTime] = useState('');
-  const [observations, setObservations] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('tb_proposal_observations') || '1. A contratante deverá disponibilizar pontos de água e energia elétrica (220v/110v).\n2. O local deve estar desimpedido para a realização do serviço.';
-    }
-    return '1. A contratante deverá disponibilizar pontos de água e energia elétrica (220v/110v).\n2. O local deve estar desimpedido para a realização do serviço.';
-  });
+  const [observations, setObservations] = useState(
+    '1. A contratante deverá disponibilizar pontos de água e energia elétrica (220v/110v).\n2. O local deve estar desimpedido para a realização do serviço.'
+  );
 
   const [items, setItems] = useState<ProposalItem[]>([
     {
@@ -958,7 +955,6 @@ export default function PropostasPage() {
                     value={executionTime}
                     onChange={(e) => {
                       setExecutionTime(e.target.value);
-                      localStorage.setItem('tb_proposal_execution_time', e.target.value);
                     }}
                     placeholder="Ex: 3 dias úteis após assinatura"
                     rows={3}
@@ -971,7 +967,6 @@ export default function PropostasPage() {
                     value={paymentTerms}
                     onChange={(e) => {
                       setPaymentTerms(e.target.value);
-                      localStorage.setItem('tb_proposal_payment_terms', e.target.value);
                     }}
                     placeholder="Ex: 50% entrada, 50% conclusão"
                     rows={3}
@@ -985,7 +980,6 @@ export default function PropostasPage() {
                   value={observations}
                   onChange={(e) => {
                     setObservations(e.target.value);
-                    localStorage.setItem('tb_proposal_observations', e.target.value);
                   }}
                   rows={6}
                 />
@@ -1020,7 +1014,6 @@ export default function PropostasPage() {
                 <FolderOpen className="h-5 w-5 text-primary" />
                 Propostas Salvas
               </CardTitle>
-              <CardDescription>Lista de propostas salvas no seu navegador</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {savedProposals.length === 0 ? (
