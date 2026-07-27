@@ -1071,7 +1071,7 @@ export default function PropostasPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold truncate">{p.title}</p>
                         <p className="text-[10px] text-muted-foreground">
-                          {new Date(p.createdAt).toLocaleDateString('pt-BR')} às {new Date(p.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(p.createdAt as string).toLocaleDateString('pt-BR')} às {new Date(p.createdAt as string).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
