@@ -57,18 +57,8 @@ export default function PropostasPage() {
   const [introduction, setIntroduction] = useState(
     'Agradecemos a oportunidade de apresentar nossa proposta comercial para a execução de serviços de limpeza e revitalização de pisos. Abaixo detalhamos o escopo, cronograma e valores previstos.'
   );
-  const [paymentTerms, setPaymentTerms] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('tb_proposal_payment_terms') || 'Sinal de 50% na aprovação e 50% após a conclusão e entrega dos serviços.';
-    }
-    return 'Sinal de 50% na aprovação e 50% após a conclusão e entrega dos serviços.';
-  });
-  const [executionTime, setExecutionTime] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('tb_proposal_execution_time') || 'A combinar conforme cronograma do cliente.';
-    }
-    return 'A combinar conforme cronograma do cliente.';
-  });
+  const [paymentTerms, setPaymentTerms] = useState('');
+  const [executionTime, setExecutionTime] = useState('');
   const [observations, setObservations] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('tb_proposal_observations') || '1. A contratante deverá disponibilizar pontos de água e energia elétrica (220v/110v).\n2. O local deve estar desimpedido para a realização do serviço.';
@@ -1080,7 +1070,7 @@ export default function PropostasPage() {
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between border-b pb-2">
                 <span className="text-muted-foreground">Cliente:</span>
-                <span className="font-semibold text-right max-w-[200px] truncate">
+                <span className="font-semibold text-right">
                   {clientName || 'Não especificado'}
                 </span>
               </div>
