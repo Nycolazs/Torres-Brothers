@@ -151,6 +151,10 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
     }
 
+    match /users/{userId}/proposals/{document=**} {
+      allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
+    }
+
     match /users/{userId}/transactionPayments/{document=**} {
       allow read, write: if isSignedIn() && isCompanyCollection(userId) && hasCompanyAccess();
     }

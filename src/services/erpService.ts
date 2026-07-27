@@ -617,3 +617,73 @@ export async function saveProviderSetting(
   await logAudit(uid, 'create', 'providerSetting', ref.id, { kind: data.kind, status: data.status });
   return ref.id;
 }
+
+// ── Proposals ─────────────────────────────────────────────────────
+
+export interface Proposal {
+  id?: string;
+  title: string;
+  selectedContactId: string;
+  customContactName: string;
+  networkName: string;
+  contractingName: string;
+  clientCnpj: string;
+  additionalAmount: number;
+  proposalDate: string;
+  validityDays: string;
+  introduction: string;
+  paymentTerms: string;
+  executionTime: string;
+  observations: string;
+  items: any[];
+  createdAt: any;
+}
+
+export async function listProposals(uid: string): Promise<Proposal[]> {
+  const snapshot = await getDocs(query(userCol(uid, 'proposals'), orderBy('createdAt', 'desc')));
+  return snapshot.docs.map((docSnap) => {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      ...data,
+      createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data.createdAt
+    } as Proposal;
+  });
+}
+
+export async function saveProposal(uid: string, proposal: Omit<Proposal, 'id'> & { id?: string }): Promise<string> {
+  const now = Timestamp.now();
+  const record = {
+    title: proposal.title,
+    selectedContactId: proposal.selectedContactId,
+    customContactName: proposal.customContactName,
+    networkName: proposal.networkName,
+    contractingName: proposal.contractingName,
+    clientCnpj: proposal.clientCnpj,
+    additionalAmount: proposal.additionalAmount,
+    proposalDate: proposal.proposalDate,
+    validityDays: proposal.validityDays,
+    introduction: proposal.introduction,
+    paymentTerms: proposal.paymentTerms,
+    executionTime: proposal.executionTime,
+    observations: proposal.observations,
+    items: proposal.items,
+    createdAt: proposal.createdAt ? (typeof proposal.createdAt === 'string' ? Timestamp.fromDate(new Date(proposal.createdAt)) : proposal.createdAt) : now,
+    updatedAt: now,
+  };
+
+  if (proposal.id) {
+    await updateDoc(userDoc(uid, 'proposals', proposal.id), record);
+    await logAudit(uid, 'update', 'proposal', proposal.id, { title: proposal.title });
+    return proposal.id;
+  }
+
+  const ref = await addDoc(userCol(uid, 'proposals'), record);
+  await logAudit(uid, 'create', 'proposal', ref.id, { title: proposal.title });
+  return ref.id;
+}
+
+export async function deleteProposal(uid: string, id: string): Promise<void> {
+  await deleteDoc(userDoc(uid, 'proposals', id));
+  await logAudit(uid, 'delete', 'proposal', id);
+}

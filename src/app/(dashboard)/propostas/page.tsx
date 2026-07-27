@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { FileSignature, Plus, Trash2, Download, CheckCircle2 } from 'lucide-react';
+import { FileSignature, Plus, Trash2, Download, CheckCircle2, Save, FolderOpen, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { ServicesManagerDialog } from '@/components/erp/ServicesManagerDialog';
 import { useAuth } from '@/hooks/useAuth';
-import { listContacts, listServices } from '@/services/erpService';
+import { listContacts, listServices, listProposals, saveProposal, deleteProposal, Proposal } from '@/services/erpService';
 import { Contact, ServiceCatalogItem } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import jsPDF from 'jspdf';
@@ -42,6 +42,8 @@ export default function PropostasPage() {
   const { companyUid, profile } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [services, setServices] = useState<ServiceCatalogItem[]>([]);
+  const [savedProposals, setSavedProposals] = useState<Proposal[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form states
   const [selectedContactId, setSelectedContactId] = useState('custom');
@@ -127,6 +129,20 @@ export default function PropostasPage() {
     load();
   }, [companyUid]);
 
+  // Load saved proposals on mount from Firebase
+  useEffect(() => {
+    async function load() {
+      if (!companyUid) return;
+      try {
+        const pList = await listProposals(companyUid);
+        setSavedProposals(pList);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    load();
+  }, [companyUid]);
+
   const clients = useMemo(() => contacts.filter((c) => c.type === 'customer' || c.type === 'both'), [contacts]);
 
   const handleContactChange = (val: string | null) => {
@@ -161,7 +177,7 @@ export default function PropostasPage() {
         const service = services.find((s) => s.id === sId);
         if (service) {
           item.title = service.description;
-          item.description = service.notes || '';
+          item.description = service.notes || '',
           item.unitPrice = service.defaultAmount || 0;
         }
       }
@@ -206,6 +222,113 @@ export default function PropostasPage() {
     } catch {
       return '';
     }
+  };
+
+  // Proposal persistence using Firebase
+  const handleSaveProposal = async () => {
+    if (!companyUid) {
+      toast.error('Você precisa estar logado para salvar.');
+      return;
+    }
+    if (!clientName) {
+      toast.error('Informe o nome do cliente antes de salvar a proposta.');
+      return;
+    }
+
+    try {
+      const dataToSave: Omit<Proposal, 'id'> & { id?: string } = {
+        title: `${clientName} - ${new Date(`${proposalDate}T00:00:00`).toLocaleDateString('pt-BR')} (${formatCurrency(totalAmount)})`,
+        selectedContactId,
+        customContactName,
+        networkName,
+        contractingName,
+        clientCnpj,
+        additionalAmount,
+        proposalDate,
+        validityDays,
+        introduction,
+        paymentTerms,
+        executionTime,
+        observations,
+        items,
+        createdAt: new Date().toISOString(),
+      };
+
+      if (editingId) {
+        dataToSave.id = editingId;
+      }
+
+      const pId = await saveProposal(companyUid, dataToSave);
+      setEditingId(pId);
+      
+      const pList = await listProposals(companyUid);
+      setSavedProposals(pList);
+      toast.success(editingId ? 'Proposta atualizada no Firebase!' : 'Proposta salva no Firebase!');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao salvar proposta no Firebase.');
+    }
+  };
+
+  const handleLoadProposal = (p: Proposal) => {
+    setEditingId(p.id || null);
+    setSelectedContactId(p.selectedContactId);
+    setCustomContactName(p.customContactName || '');
+    setNetworkName(p.networkName || '');
+    setContractingName(p.contractingName || '');
+    setClientCnpj(p.clientCnpj || '');
+    setAdditionalAmount(p.additionalAmount || 0);
+    setProposalDate(p.proposalDate || new Date().toISOString().slice(0, 10));
+    setValidityDays(p.validityDays || '10');
+    setIntroduction(p.introduction || '');
+    setPaymentTerms(p.paymentTerms || '');
+    setExecutionTime(p.executionTime || '');
+    setObservations(p.observations || '');
+    setItems(p.items || []);
+    toast.success('Dados da proposta carregados para edição!');
+  };
+
+  const handleDeleteProposal = async (id: string) => {
+    if (!companyUid) return;
+    try {
+      await deleteProposal(companyUid, id);
+      const pList = await listProposals(companyUid);
+      setSavedProposals(pList);
+      if (editingId === id) {
+        setEditingId(null);
+      }
+      toast.success('Proposta excluída com sucesso.');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao excluir proposta.');
+    }
+  };
+
+  const handleNewProposal = () => {
+    setEditingId(null);
+    setSelectedContactId('custom');
+    setCustomContactName('');
+    setNetworkName('');
+    setContractingName('');
+    setClientCnpj('');
+    setAdditionalAmount(0);
+    setProposalDate(new Date().toISOString().slice(0, 10));
+    setValidityDays('10');
+    setIntroduction('Agradecemos a oportunidade de apresentar nossa proposta comercial para a execução de serviços de limpeza e revitalização de pisos. Abaixo detalhamos o escopo, cronograma e valores previstos.');
+    setPaymentTerms('Sinal de 50% na aprovação e 50% após a conclusão e entrega dos serviços.');
+    setExecutionTime('A combinar conforme cronograma do cliente.');
+    setObservations('1. A contratante deverá disponibilizar pontos de água e energia elétrica (220v/110v).\n2. O local deve estar desimpedido para a realização do serviço.');
+    setItems([
+      {
+        serviceId: '',
+        title: '',
+        description: '',
+        statusFinanceiro: 'Incluso no Pacote',
+        qty: 1,
+        unitPrice: 0,
+      }
+    ]);
+    toast.info('Formulário limpo para nova proposta.');
   };
 
   const generateProposalPDF = async () => {
@@ -449,7 +572,7 @@ export default function PropostasPage() {
       const introY = Math.max(68, clientInfoY + 4);
       doc.text(splitIntro, 15, introY);
 
-      const tableStartY = introY + (splitIntro.length * 4.5) + 6;
+      const tableStartY = introY + (splitIntro.length * 4) + 4;
 
       // --- SERVICES & VALUES TABLE ---
       const tableHeaders = ['ITEM / ETAPA', 'DESCRIÇÃO DO ESCOPO TÉCNICO', 'STATUS FINANCEIRO'];
@@ -464,15 +587,13 @@ export default function PropostasPage() {
         body: tableRows,
         startY: tableStartY,
         theme: 'grid',
-        styles: { fontSize: 8.2, cellPadding: 3.5, font: 'helvetica' },
+        styles: { fontSize: 8, cellPadding: 2.5, font: 'helvetica' },
         didParseCell: function (data) {
           if (data.section === 'head') {
             if (data.column.index <= 1) {
-              // Item / Etapa and Descrição headers: Gold background, Dark Green text
               data.cell.styles.fillColor = [200, 169, 110];
               data.cell.styles.textColor = [7, 22, 16];
             } else {
-              // Status Financeiro header: Dark Green background, white text
               data.cell.styles.fillColor = [7, 22, 16];
               data.cell.styles.textColor = [255, 255, 255];
             }
@@ -486,67 +607,97 @@ export default function PropostasPage() {
         alternateRowStyles: { fillColor: [246, 249, 247] },
       });
 
-      const finalY = ((doc as JsPDFWithAutoTable).lastAutoTable?.finalY || 80) + 8;
+      let currentY = ((doc as JsPDFWithAutoTable).lastAutoTable?.finalY || 80) + 6;
+
+      const checkPageOverflow = (heightNeeded: number) => {
+        if (currentY + heightNeeded > 275) {
+          doc.addPage();
+          drawPageDecorations();
+          currentY = 48;
+          return true;
+        }
+        return false;
+      };
+
+      checkPageOverflow(10);
 
       // Grand Total Gold Bar
-      doc.setFillColor(200, 169, 110); // Gold
-      doc.rect(100, finalY, 95, 10, 'F');
+      doc.setFillColor(200, 169, 110);
+      doc.rect(100, currentY, 95, 8, 'F');
       
       doc.setTextColor(7, 22, 16);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.text('VALOR TOTAL', 103, finalY + 6.5);
-      doc.text(formatCurrency(totalAmount), 192, finalY + 6.5, { align: 'right' });
+      doc.setFontSize(9.5);
+      doc.text('VALOR TOTAL', 103, currentY + 5.5);
+      doc.text(formatCurrency(totalAmount), 192, currentY + 5.5, { align: 'right' });
 
-      // --- PAYMENT INFO & TERMS SECTION (BOTTOM LEFT) ---
-      const infoY = finalY + 22;
+      currentY += 12;
+
+      // --- CONDIÇÕES COMERCIAIS & OBSERVAÇÕES ---
+      checkPageOverflow(10);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9.5);
       doc.setTextColor(7, 22, 16);
-      doc.text('CONDIÇÕES COMERCIAIS', 15, infoY);
+      doc.text('CONDIÇÕES COMERCIAIS & OBSERVAÇÕES', 15, currentY);
+      currentY += 5;
 
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Prazo de Execução:', 15, infoY + 6);
-      doc.setFont('helvetica', 'normal');
-      const executionSplit = doc.splitTextToSize(executionTime, 80);
-      doc.text(executionSplit, 15, infoY + 10);
+      const printBlock = (title: string, text: string) => {
+        if (!text) return;
+        checkPageOverflow(6);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(title, 15, currentY);
+        currentY += 4;
 
-      const nextY = infoY + 14 + (executionSplit.length * 4);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Forma de Pagamento:', 15, nextY);
-      doc.setFont('helvetica', 'normal');
-      const paymentSplit = doc.splitTextToSize(paymentTerms, 80);
-      doc.text(paymentSplit, 15, nextY + 4);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(80, 80, 80);
 
-      const obsY = nextY + 8 + (paymentSplit.length * 4);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Observações:', 15, obsY);
-      doc.setFont('helvetica', 'normal');
-      const obsSplit = doc.splitTextToSize(observations, 80);
-      doc.text(obsSplit, 15, obsY + 4);
+        const lines = text.split('\n');
+        for (const line of lines) {
+          const splitLines = doc.splitTextToSize(line || ' ', 180);
+          for (const splitLine of splitLines) {
+            checkPageOverflow(4.5);
+            doc.text(splitLine, 15, currentY);
+            currentY += 4;
+          }
+        }
+        currentY += 2;
+      };
 
-      // --- SIGNATURE SECTION (BOTTOM RIGHT - STACKED) ---
+      printBlock('Prazo de Execução:', executionTime);
+      printBlock('Forma de Pagamento / Condições Comerciais:', paymentTerms);
+      printBlock('Requisitos & Observações Gerais:', observations);
+
+      // --- SIGNATURE SECTION ---
+      // Force signatures to always sit at the bottom of the last page (Y = 250)
+      if (currentY > 250) {
+        doc.addPage();
+        drawPageDecorations();
+      }
+      currentY = 250;
+
       doc.setDrawColor(180, 180, 180);
-      doc.setLineWidth(0.4);
+      doc.setLineWidth(0.3);
 
-      // 1. Torres Brothers Representative signature line (Upper)
-      const sigRepY = 238;
-      doc.line(125, sigRepY, 195, sigRepY);
+      const sigLeftX = 15;
+      const sigWidth = 75;
+      doc.line(sigLeftX, currentY, sigLeftX + sigWidth, currentY);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       doc.setTextColor(7, 22, 16);
-      doc.text('TORRES BROTHERS', 160, sigRepY + 4, { align: 'center' });
+      doc.text('TORRES BROTHERS', sigLeftX + sigWidth / 2, currentY + 3.5, { align: 'center' });
       doc.setFont('helvetica', 'normal');
-      doc.text('Responsável Técnico', 160, sigRepY + 8, { align: 'center' });
+      doc.text('Responsável Técnico', sigLeftX + sigWidth / 2, currentY + 7, { align: 'center' });
 
-      // 2. Client signature line (Lower - below the representative signature)
-      const sigClientY = 265;
-      doc.line(125, sigClientY, 195, sigClientY);
+      const sigRightX = 120;
+      doc.line(sigRightX, currentY, sigRightX + sigWidth, currentY);
       doc.setFont('helvetica', 'bold');
       const signerName = contractingName ? contractingName.toUpperCase() : clientName.toUpperCase();
-      doc.text(signerName, 160, sigClientY + 4, { align: 'center' });
+      doc.text(signerName, sigRightX + sigWidth / 2, currentY + 3.5, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.text('Contratante / Autorizado', sigRightX + sigWidth / 2, currentY + 7, { align: 'center' });
 
       // Save document
       const normalizedClientName = clientName.toLowerCase().replace(/\s+/g, '-');
@@ -567,6 +718,9 @@ export default function PropostasPage() {
             Gere propostas comerciais profissionais em PDF usando a identidade visual oficial (Verde e Ouro)
           </p>
         </div>
+        <Button onClick={handleNewProposal} size="sm" variant="outline" className="cursor-pointer">
+          <Plus className="h-4 w-4 mr-1" /> Nova Proposta
+        </Button>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_450px]">
@@ -813,25 +967,27 @@ export default function PropostasPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Prazo de Execução</Label>
-                  <Input
+                  <Textarea
                     value={executionTime}
                     onChange={(e) => {
                       setExecutionTime(e.target.value);
                       localStorage.setItem('tb_proposal_execution_time', e.target.value);
                     }}
                     placeholder="Ex: 3 dias úteis após assinatura"
+                    rows={3}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label>Condições de Pagamento</Label>
-                  <Input
+                  <Textarea
                     value={paymentTerms}
                     onChange={(e) => {
                       setPaymentTerms(e.target.value);
                       localStorage.setItem('tb_proposal_payment_terms', e.target.value);
                     }}
                     placeholder="Ex: 50% entrada, 50% conclusão"
+                    rows={3}
                   />
                 </div>
               </div>
@@ -844,7 +1000,7 @@ export default function PropostasPage() {
                     setObservations(e.target.value);
                     localStorage.setItem('tb_proposal_observations', e.target.value);
                   }}
-                  rows={4}
+                  rows={6}
                 />
               </div>
             </CardContent>
@@ -863,6 +1019,11 @@ export default function PropostasPage() {
                 Gerar PDF Profissional
               </Button>
 
+              <Button onClick={handleSaveProposal} variant="secondary" className="w-full cursor-pointer py-6 text-base" size="lg">
+                <Save className="h-5 w-5 mr-2" />
+                Salvar Proposta
+              </Button>
+
               <div className="border-t pt-4 space-y-3">
                 <h4 className="text-sm font-semibold">Estrutura do PDF Branded:</h4>
                 <ul className="space-y-2 text-xs text-muted-foreground">
@@ -876,7 +1037,7 @@ export default function PropostasPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-[#c8a96e] shrink-0" />
-                    Pág 2+: Detalhamento estruturado e limpo
+                    Pág 2+: Detalhamento estruturado e limpo com quebra de página automática
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-[#c8a96e] shrink-0" />
@@ -888,6 +1049,55 @@ export default function PropostasPage() {
                   </li>
                 </ul>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Saved Proposals list */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <FolderOpen className="h-5 w-5 text-primary" />
+                Propostas Salvas
+              </CardTitle>
+              <CardDescription>Lista de propostas salvas no seu navegador</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {savedProposals.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">Nenhuma proposta salva ainda.</p>
+              ) : (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  {savedProposals.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between p-2 rounded-lg border bg-card hover:bg-accent/40 text-xs gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate">{p.title}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {new Date(p.createdAt).toLocaleDateString('pt-BR')} às {new Date(p.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Carregar proposta"
+                          className="h-7 w-7 text-primary cursor-pointer hover:bg-primary/10"
+                          onClick={() => handleLoadProposal(p)}
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        </Button>
+                         <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Excluir proposta"
+                          className="h-7 w-7 text-destructive cursor-pointer hover:bg-destructive/10"
+                          onClick={() => p.id && handleDeleteProposal(p.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
